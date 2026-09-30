@@ -97,3 +97,15 @@ O lead β aplica ao SPEC, como v0.2.1 com changelog, os itens 1 a 4 do "REQUEST 
 4. a remoção da nota obsoleta.
 
 Nenhuma dessas mudanças altera o núcleo nem os resultados já verificados. O item 5 fica a critério do lead β.
+- **Células sem resposta completa com patch** (BLOCKED do lead β, decidido). Contrastes com `patch:*` em `D` são "n/a estrutural" nas células L1, L3 sobre L1 e nas ablações top-1 A2/C2/C4, incluídos os equivalentes L3.
+  - **Motivo:** a vista não expõe o handle do patch, então nenhuma família com o patch é exprimível.
+  - Nunca são pontuadas. O runner e a avaliação relatam a contagem por família. O custo é perder essas células semissintéticas; as reais continuam cobertas.
+- **Patches em N1/N2** (pedido de confirmação do lead γ, decidido). São exprimíveis, porque o código histórico roda sobre qualquer resposta. A regra compartilhada `oracle.truth.default_expressible` já faz isso. O texto do SPEC é esclarecido na v0.2.1.
+- **Identificação sobre U na execução completa** (A15). U só é construído para as células que o exigem (§8.4), e só na amostra da família I (`info_fraction` do runner, registrada no manifesto do lote).
+  - Cada consulta tem orçamento. O corte conta como "não saturado".
+  - Com isso nenhuma célula sem a resposta completa chega a `identificado` (A15: nenhuma expansão saturou em L ≤ 2). O erro vai na direção conservadora.
+- **Escopo das execuções dev/cal** (sessão principal, pelo custo medido pelo lead γ):
+  - cal completo (200 grupos), para a calibração §13.5;
+  - amostra semeada de 120 grupos de dev.
+
+  As execuções rodam em shards pela sessão principal, a partir de main. As vistas são construídas sob demanda e apagadas depois de cada contraste, com manifesto de hashes (disco).
