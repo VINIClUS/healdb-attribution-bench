@@ -967,13 +967,25 @@ O teste confere que a tabela é **total**: todo par (célula, estado) tem exatam
 
 As inelegíveis ficam fora, com contagem por motivo.
 
+**Por que a cobertura primária usa só as alteradas** (R13, A18, D7.1). No núcleo determinístico, os finais de x0 e
+x1 revelam se `a` mudou. Pôr `Q_u` no denominador inflaria a cobertura com casos triviais, e as falsas atribuições em
+`Q_u` já são medidas pelo controle nulo (§11.2 do protocolo). A justificativa **não vale na campanha**: sob
+variabilidade, `Q_u` deixa de ser trivial, e a cobertura sobre `Q_u` passa a ser relatada ao lado da primária.
+
 ### 10.2 Primárias
 
 Estimadores de razão agregados por consulta, com inferência por grupo (§12):
 - `cobertura = #correto_sustentado(Q_c) / |Q_c|`. `falha` fica no denominador como não coberta.
 - `cobertura_bruta = #categóricas(Q_c) / |Q_c|`.
-- `risco_seletivo = (#errado + #indevidamente_exclusivo) / #categóricas`, sobre `Q_c ∪ Q_inc`.
+- `risco_seletivo = (#errado + #indevidamente_exclusivo) / #categóricas`, sobre `Q_c ∪ Q_inc` (literal, §11.1).
+- `risco_comprometido = (#errado + #indevidamente_exclusivo) / #(categóricas − nao_comprometido)`, sobre
+  `Q_c ∪ Q_inc` (A04, D7.8). Uma lista longa de `alternativas` é `nao_comprometido` e diluiria o risco literal sem
+  ganhar cobertura; por isso a calibração a 5% (13.5) e a guarda de H1b (13.1) usam o risco comprometido. Os dois
+  riscos são sempre relatados. Com denominador zero, o risco é 0 (nenhuma saída comprometida, nenhum erro).
 - **Controle nulo:**
+  - a referência de cada consulta N é a do oráculo, não presumida (A21): N(a)–N(c) só entram como nulos se o
+    oráculo dá `inalterado` para todas as suas consultas; um contraste N com consulta alterada é erro de geração e
+    sai da família, com contagem;
   - falsas atribuições por contraste da família N;
   - **principal**: fração de grupos com ≥ 1 falsa atribuição em contrastes N.
 
@@ -1008,7 +1020,7 @@ por família de cenário. As probabilidades de inclusão servem só às estimati
 
 **EX-17.** 11 consultas em 4 contrastes e 3 grupos (dados no JSON):
 - `cobertura` = 1/5 = 0,2; `cobertura_bruta` = 3/5 = 0,6;
-- `risco_seletivo` = 2/4 = 0,5;
+- `risco_seletivo` = 2/4 = 0,5; `risco_comprometido` = 2/3 (q5 é `nao_comprometido`);
 - fração de grupos N com falsa atribuição = 1/2;
 - falsas atribuições por contraste N = 0,5;
 - cobertura em `Q_u` = 2/4;
@@ -1101,11 +1113,11 @@ Motivos padronizados de abstenção:
 
 | família | geração | contrastes/grupo |
 |---|---|---|
-| N | (a) Só metadados de transporte mudam: `D = ∅`, respostas iguais no nível 2. (b) Só fatores certificados dummy: `map` no espaço OMS, um limiar movido numa faixa vazia. (c) Repetição real: medicamentos do grupo com o mesmo texto enviado. (d) Estocástico: só simulador, reportado à parte. Referência: tudo `ausencia_de_mudanca`. Distinguir nulo local de nulo prospectivo. | 3 |
+| N | (a) Só metadados de transporte mudam: `D = ∅`, respostas iguais no nível 2. (b) Só fatores certificados dummy: `map` no espaço OMS, um limiar movido numa faixa vazia. (c) Repetição real: medicamentos do grupo com o mesmo texto enviado. (d) Estocástico: só simulador, reportado à parte. Referência esperada: tudo `ausencia_de_mudanca`, **confirmada pelo oráculo** consulta a consulta (10.2, A21). Distinguir nulo local de nulo prospectivo. | 3 |
 | F | Um fator por contraste: `ent_thr`, `icd_thr` ou `trait`, com níveis de 4.1. Patches de borda levam um score exatamente a `t` e a `t − 1e-9`. Referência típica: famílias unitárias. | ~7 |
 | M | Pares de `map` com a terminologia fixa. `unmapped` é preservado. Mudança de granularidade sinalizada por relação ancestral válida. `EXTEND` no espaço CM. | ~5 |
 | O | `occ` × `sel`, mais `first_upsert`. Preferir grupos com alta multiplicidade de candidatos. Um patch opcional troca posições de entidades. | ~5 |
-| X | (i) O bundle real `V1_TO_V2`, nas duas granularidades; nos grupos de teste fica fora do conjunto confirmatório (D2). (ii) Amostragem com rejeição guiada pelo oráculo: k de 3 a 6 fatores, ao menos um sem efeito verificado e ao menos um par oposto, com cotas de forma (unitária, vários conjuntos, interação, não monótona) fixadas em dev/cal. (iii) O exemplo de §7.2 como caso semissintético (não selado; é público). | ~6 |
+| X | (i) O bundle real `V1_TO_V2`, nas duas granularidades; nos grupos de teste fica fora do conjunto confirmatório (D2). (ii) Amostragem com rejeição guiada pelo oráculo: k de 3 a 6 fatores, ao menos um sem efeito verificado e ao menos um par oposto, com cotas de forma (unitária, vários conjuntos, interação, não monótona) fixadas em dev/cal. (iii) O exemplo de §7.2 como caso semissintético, **só em dev/cal** (é público; A12, D7.10). | ~6 |
 | I | As mesmas execuções de F/M/O/X cruzadas com L1, L2-R, L2-M, A1–A6, C1–C4 e R-A/R-B/R-C, com as células n/a e as equivalentes de 7.3. Execuções novas só para divergência declarado ≠ executado (regra HYPOTHETICAL, portão, `occ`) num subconjunto de F/X. | – |
 | P | **Só catalogada** (R20). Preparação: duplicação da indicação, `<drug>`, "with or without", corte. Sem chamadas novas nem simulador nesta fase, toda instância tem referência `contrafactual_indisponivel` e não entra em nenhum denominador. O catálogo registra os fatores e a divergência real da V2 (E14). | – |
 
@@ -1119,9 +1131,29 @@ Todos na população de contrastes de teste da família indicada, com o mesmo m�
 
 | hipótese | estimando | região | teste |
 |---|---|---|---|
-| H1a | `Δa = cob(L2-R) − cob(L2-M)` | R-A, `b = 64`; famílias F, M, O, X | não inferioridade a −0,02 |
-| H1b (R17) **[revisar]** | `Δb = cob(com evidência efetiva) − cob(sem ela)`, agregado sobre dois estratos pré-declarados da família I | divergência: L2-R × (L2-R − A3), em R-A; perda de replay: L2-M × L2-R, em R-C | superioridade (`Δb > 0`), com a guarda `risco(com) − risco(sem) ≤ +0,02` no limite superior de 95%. Se a guarda falha, H1b não é sustentada |
-| H2 (R18) | composto: (i) fração de grupos nulos com falsa atribuição, L3 < L2 (superioridade); **e** (ii) `cob(L3) − cob(L2) > −0,02` (não inferioridade), na campanha pertinente | – | – |
+| H1a (A05, D7.9) | `Δa = cob(L2-R) − cob(L2-M)` | R-A, **`b = 16`** (32 e 64 secundários); famílias F, M, O, X, sem X(i) em teste nem X(iii) | não inferioridade a −0,02 |
+| H1b (R17, A06) | `Δb = cob(com evidência efetiva) − cob(sem ela)`, estimador de razão **conjunto por consulta** sobre dois estratos pré-declarados da família I; cada estrato é secundário | divergência: L2-R × (L2-R − A3), em R-A; perda de replay: L2-M × L2-R, em R-C | superioridade (`Δb > 0`), com a guarda `risco_comprometido(com) − risco_comprometido(sem) ≤ +0,02` no percentil 97,5 do bootstrap. Se a guarda falha, H1b não é sustentada |
+| H2 (R18) | composto: (i) fração de grupos nulos com falsa atribuição, L3 < L2 (superioridade); **e** (ii) `cob(L3) − cob(L2) > −0,02` (não inferioridade), na campanha pertinente | – | interseção-união: `p_H2 = max(p_i, p_ii)` (A08) |
+
+**H1a** (A05, D7.9):
+- Em L2-R valem certificados `trace` derivados dos traços devolvidos por avaliações do log (9.2). Com eles, e com
+  `b ≥ 2`, L2-R alcança o que L2-M armazena; no núcleo determinístico `Δa ≡ 0` é esperado.
+- **Identidade por construção.** Se todo `Δ*_b` é 0 (variância zero), o resultado é relatado como "identidade por
+  construção" e **não** como evidência de não inferioridade: não se relata o valor-p `1/(B+1)` como rejeição.
+- **Armazenamento e tempo** (critério descritivo pré-declarado, §11.4): razão de bytes deduplicados L2-R / L2-M por
+  contraste, agregada por grupo, com IC bootstrap de 95% (13.2); e tempo de reconstrução (CPU de `evaluate` dos
+  híbridos em L2-R contra a leitura dos traços em L2-M), com mediana e IC. Não há limiar de sucesso.
+
+**H1b** (A06, D7.7, D7.8):
+- **Denominador comum aos dois braços:** consultas alteradas com família completa e fora de `indeterminado` **nos
+  dois** braços pareados. Uma consulta `indeterminado` num braço sai dos dois.
+- Relatar `|Q_ind|` por braço, e uma sensibilidade que conta `indeterminado` como não coberto (denominador: todas as
+  alteradas com família completa).
+- Estimador de razão conjunto: soma de `correto_sustentado` sobre soma de consultas, nos dois estratos juntos.
+- **Guarda:** percentil 97,5 dos `Δrisco*_b` ≤ +0,02, com o risco comprometido (10.2). Numa reamostra em que um braço
+  não tem categóricas comprometidas, o risco desse braço é 0.
+- A1 fica fora dos estratos: a família P é só catalogada (D7.2).
+- Sensibilidade pré-declarada: H1b também com `K = ∅` (4.3, D7.7).
 
 - Sem campanha de teste (`docs/decisoes.md`), H2 não é executada confirmatoriamente: entra no Holm com p = 1. O piloto
   dev/cal é exploratório.
@@ -1164,20 +1196,22 @@ Todos na população de contrastes de teste da família indicada, com o mesmo m�
 - Nunca usar bootstrap degenerado como prova de risco zero.
 - Registrar a suposição: grupos independentes.
 
-**EX-19.** Com n = 40 grupos e α = 0,05, o limite é 0,0721575.
+- α = 0,025 unilateral (A08), o mesmo das inferências primárias: o limite é um IC unilateral de 97,5%.
+
+**EX-19.** Com n = 40 grupos e α = 0,025, o limite é `1 − 0,025^{1/40}` = 0,0880973.
 
 ### 13.5 Cobertura a 5% de risco seletivo
 
 - Os botões do método (rigor de verificação e, na campanha, θ de variabilidade) são varridos **em cal**.
-- Congela-se o valor que maximiza a cobertura com risco seletivo observado ≤ 5% em cal.
-- No teste, reportar cobertura e risco observados com IC, mesmo acima da meta (§11.1).
+- Congela-se o valor que maximiza a cobertura com **risco comprometido** (10.2) observado ≤ 5% em cal (A04, D7.8).
+- No teste, reportar cobertura, risco comprometido e risco literal observados com IC, mesmo acima da meta (§11.1).
 
 ### 13.6 Simulação de precisão (dimensionamento)
 
 - Usar só dev/cal: a distribuição de tamanhos de grupo, as consultas por grupo e a correlação intragrupo das
   diferenças pareadas.
 - Simular `n` grupos de teste (grade 100–600) × 1.000 réplicas, com `Δ = 0` verdadeiro.
-- Escolher o menor `n` com P(limite inferior de 95% > −0,02) ≥ 0,80.
+- Escolher o menor `n` com P(limite inferior a `1 − 0,025/3` > −0,02) ≥ 0,80: o nível do pior caso de Holm (A08).
 - Se o orçamento não o permite, declarar H1a **estimativa**, sem alegação de não inferioridade (§4.4).
 - Relatar efeitos, IC, número de grupos e custos, não só valores-p.
 
