@@ -74,8 +74,7 @@ class EvalResult:
     trace: tuple[TraceRecord, ...]
 
     def state(self, key: AssocKey) -> Presence:
-        """Keys absent from the map are ABSENT only if the med produced a valid response (§1.4)."""
-        return self.presence.get(key, Presence.ABSENT)
+        return presence(self.presence, key)
 
 
 @dataclass(frozen=True, slots=True)
@@ -137,6 +136,30 @@ class Method(Protocol):
     name: str
 
     def explain(self, env: Env, queries: Sequence[Query]) -> Mapping[str, Explanation]: ...
+
+
+def presence(m: Mapping[AssocKey, Presence], key: AssocKey) -> Presence:
+    """Presence maps list PRESENT and UNAVAILABLE keys; a key missing from the map is ABSENT (§1.4)."""
+    return m.get(key, Presence.ABSENT)
+
+
+def same_presence(a: Mapping[AssocKey, Presence], b: Mapping[AssocKey, Presence]) -> bool:
+    """Decision-level equality (§2, level 3), ignoring explicit ABSENT entries."""
+
+    def norm(m: Mapping[AssocKey, Presence]) -> dict[AssocKey, Presence]:
+        return {k: v for k, v in m.items() if v != Presence.ABSENT}
+
+    return norm(a) == norm(b)
+
+
+def changed(env: Env, key: AssocKey) -> bool:
+    """Whether the observed finals differ for `key` (reading finals is free, §7.4)."""
+    return presence(env.final("x0"), key) != presence(env.final("x1"), key)
+
+
+def final_certificates(D: Iterable[str]) -> tuple[Certificate, ...]:
+    """The two free certificates of §9.2: suff(∅) is false and suff(D) is true for a changed query."""
+    return (Certificate("final", (), False), Certificate("final", canonical_set(D), True))
 
 
 def canonical_set(s: Iterable[str]) -> tuple[str, ...]:
