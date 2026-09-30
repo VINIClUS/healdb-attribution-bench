@@ -17,3 +17,7 @@ runs/
 .env
 .env.*
 *.pem
+
+# tool state created by MCP servers in headless sessions
+.serena/
+.tokensave/
