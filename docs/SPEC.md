@@ -1,8 +1,20 @@
 # SPEC — benchmark de atribuição de mudanças por associação (HealDB)
 
-Versão 0.1 (lead β, 2026-09-30), para revisão na GATE 2. Implementa o protocolo v0.2
+Versão 0.2 (lead β, 2026-09-30). É a revisão da v0.1 após a GATE 2: segue a auditoria
+`docs/auditorias/gate2_spec.md` (A01–A21) e as decisões da sessão principal em `docs/decisoes.md` ("GATE 2"), que
+prevalecem sobre a auditoria. As mudanças estão listadas em §16. Implementa o protocolo v0.2
 (`docs/protocolo/Protocolo_Experimental_HealDB_Revisado_v0_2.md`). As resoluções **R01…R30** são as de
-`docs/analise/00_analise_protocolo.md` §3.
+`docs/analise/00_analise_protocolo.md` §3; os desvios registrados são os D7.x de `docs/deviations.md`.
+
+**Normatividade da semântica do núcleo.** Onde este SPEC descreve o pós-processamento (§1–§3), o normativo é o
+comportamento de `src/habench/pipeline/core.py` (lead α), que reproduz as tabelas V1 e V2 com 0 diferenças. As
+citações `core.py:NN` apontam as linhas. Se o texto e o núcleo divergirem, vale o núcleo, e o texto deve ser corrigido.
+
+**Fora do escopo deste SPEC** (remissão aos documentos donos, A21):
+- métodos B0–B3 e as adaptações de BugDoc e Why-Diff (§10 do protocolo): lead γ;
+- estados de afirmação reconstruída (§6.5): `habench.types.ClaimState` e `habench.prov` (lead δ);
+- campanha, anotação e Q3 (§9, §12): lead δ;
+- a "base de nove combinações" de §8.2 do protocolo aparece aqui só como grade das famílias F e M (§12).
 
 ## 0. Convenções
 
@@ -29,7 +41,7 @@ Versão 0.1 (lead β, 2026-09-30), para revisão na GATE 2. Implementa o protoco
 | espaço | `system` | `version` | `code` |
 |---|---|---|---|
 | CM | `ICD-10-CM` | `acm:<ModelVersion>` da resposta | código do ACM com ponto, como devolvido (`E11.65`) |
-| OMS | `ICD-10-WHO` | `hier:<prefixo sha256 das tabelas de hierarquia>` | código OMS sem ponto, 3 ou 4 caracteres (`E119`) |
+| OMS | `ICD-10-WHO` | `hier:<16 primeiros hex do sha256 das tabelas de hierarquia>` (`mapping.py:29`) | código OMS sem ponto, 3 ou 4 caracteres (`E119`) |
 
 Códigos de terminologias diferentes nunca se igualam por remoção de ponto ou truncamento. A passagem CM → OMS é
 sempre a projeção declarada abaixo, rotulada "projeção estrutural".
@@ -47,7 +59,9 @@ Seja `nodot = code.replace(".", "")`, `cat` o conjunto de categorias (3 caracter
 | `who_exact` | `nodot` se `nodot ∈ subcat` ou `nodot ∈ cat` | `unmapped` |
 | `who_cat3` | `nodot[:3]` se `nodot[:3] ∈ cat` | `unmapped` |
 
-- Um registro `unmapped` é mantido e contado, mas não é chave nem ausência.
+- Um registro aprovado `unmapped` é contado à parte (`RunResult.unmapped`, `core.py:318`). Ele não gera chave
+  própria e não afeta a presença de nenhuma chave: uma chave que nenhum registro aprovado produz é `ABSENT` (1.4),
+  mesmo que o registro que a produzia antes tenha virado `unmapped` (A09, EX-27).
 - Nenhuma projeção tenta um prefixo de 4 caracteres: `E11.65` vai para `E11`, não para `E116` (V1 e V2).
 
 ### 1.3 Espaço de comparação por contraste (R02)
@@ -75,15 +89,22 @@ A chave de `C61` do medicamento 4 é `AssocKey(4, "ICD-10-CM", "acm:3.0.0.202310
 ### 1.4 Presença (R03)
 
 - `Presence.PRESENT`: algum registro aprovado da execução tem essa chave.
-- `Presence.ABSENT`: a resposta do medicamento existe e nenhum registro aprovado tem essa chave.
-- `Presence.UNAVAILABLE`: a resposta do medicamento não existe, falhou ou está incompleta nessa execução. Vale para
-  todas as chaves do medicamento.
+- `Presence.ABSENT`: a resposta do medicamento é válida (inclusive sem entidades, `STATUS_EMPTY`) e nenhum registro
+  aprovado tem essa chave. Registros `unmapped` não mudam isso.
+- `Presence.UNAVAILABLE`: não há linha de resposta para o medicamento (`STATUS_MISSING`), ou a resposta é NULL ou
+  JSON não decodificável (`STATUS_FAILED`) (`evidence.py:19-22`, `core.py:84-88`). Na campanha, também uma resposta
+  com erro de serviço ou truncada. Vale para todas as chaves do medicamento.
 
 Uma consulta `(contraste, a)` é **elegível** só se a presença de `a` é `PRESENT` ou `ABSENT` em x0 e em x1. As
 inelegíveis entram no fluxo de elegibilidade, com o motivo, e nunca viram "aparecimento" nem "desaparecimento".
 
 **EX-02.** O medicamento 7 não tem resposta em x0. Em x1, sua resposta produz `E119`. Em x0, a presença de
 `(7, E119)` é `UNAVAILABLE`; em x1, `PRESENT`. A consulta é inelegível, não é um "aparecimento".
+
+**EX-27 (`unmapped` não é ausência própria, A09).** Uma entidade com `E11.65` 0,80, preset V1 com `map`
+`who_exact_fb` → `who_exact`, espaço OMS. Em x0, a chave `E11` está presente. Em x1, `E11.65` não tem projeção
+exata: o registro aprovado vai para `unmapped = {E11.65}` e a chave `E11` fica `ABSENT`. A consulta `E11` mudou, com
+família `{{map}}`.
 
 ## 2. Três níveis de igualdade (§5.2)
 
@@ -96,10 +117,27 @@ inelegíveis entram no fluxo de elegibilidade, com o motivo, e nunca viram "apar
      só as chaves dos objetos e nunca reordena arrays;
    - comparação exata dos floats, como `float` do Python.
    Uma chave `ResponseMetadata` aninhada (dentro de uma entidade) **não** é removida.
-3. **Decisão:** igualdade do mapa `AssocKey → Presence` no espaço do contraste, mais os atributos definidos para o
-   desfecho secundário (score, classe, granularidade).
+3. **Decisão:** igualdade do mapa `AssocKey → Presence` no espaço do contraste (desfecho primário) e, à parte, dos
+   atributos de 2.1 (desfechos secundários).
 
 A forma canônica serve só para comparar. O pipeline sempre recebe a resposta original, na ordem original.
+
+### 2.1 Atributos secundários (§5.1 do protocolo, A10)
+
+Definidos só para chaves `PRESENT` nas duas execuções. Valores comparados **exatamente** (floats como `float`, sem
+tolerância); tolerâncias só em análises auxiliares rotuladas, nunca para declarar identidade nem esconder cruzamento
+de limiar (§5.2 do protocolo).
+
+| atributo | valor | fonte |
+|---|---|---|
+| `score` | `cs` do melhor registro aprovado da chave (ordem `cs` desc, `es` desc) | `core.py:319-325` (`Attrs.score`) |
+| `entity_score` | `es` desse mesmo registro | `Attrs.entity_score` |
+| `classe` | V1: `fl_low_confidence = cs < low_conf_thr ou es < low_conf_thr` (0,70). V2: `tp_icd_score` = HIGH se `cs ≥ icd_hi` (0,60), MEDIUM se `cs ≥ 0,30`, senão LOW | F1 §2.2; `mapa_codigo_healdb.md` §2 |
+| `granularidade` | no espaço OMS, comprimento do código (3 = categoria, 4 = subcategoria). Há **mudança de granularidade** quando `k` (4 caracteres) está presente numa execução e ausente na outra, e `k[:3]` está presente na outra. Relação ancestral válida só pela hierarquia fixada | §5.1 do protocolo |
+
+Métricas: contagens descritivas de chaves com atributo alterado, por família de cenário e origem. A atribuição de
+mudanças de atributo usa a mesma maquinaria de §6 com `state` categórico; é **secundária e exploratória**, e só nela
+os botões `low_conf_thr` e `icd_hi` entram em `D`.
 
 **EX-03.** Com a resposta base `a`:
 
@@ -119,42 +157,56 @@ fixa a semântica que o oráculo, os exemplos e o universo de identificação us
 ### 3.1 Evidência
 
 Por medicamento, a resposta do ACM tem um array `Entities`, na ordem original. Cada entidade tem:
-- `Id`;
+- `Id` (se ausente, `pos + 1`, `evidence.py:188`);
 - `Type`;
 - `Score` (`es`);
-- `Traits`: pares (`Name`, `Score`), com score ausente tratado como 0;
+- `Traits`: pares (`Name`, `Score`); um score ausente conta como 0 nas comparações de HYPOTHETICAL;
 - `ICD10CMConcepts`: pares (`Code`, `Score` = `cs`), em ordem.
 
-Entidade sem conceitos não gera candidato.
+Entidade sem conceitos não gera candidato, mas seus traços contam para o seu grupo de `Id` em `per_entity_any`.
+
+**Grupo de `Id`:** as entidades do mesmo medicamento com o mesmo `Id`. Nos dados reais há `Id` repetido (R30).
 
 ### 3.2 Etapas, em ordem
 
 1. **Patches.** Aplicar os patches presentes no híbrido (§4.5).
 2. **Candidatos.** Para cada entidade, na ordem do array, e para cada conceito, na ordem, um candidato
-   `c = (pos, eid, code, rank, es, cs, traits, type)`. `rank` é a posição do conceito ordenado por `cs` decrescente,
-   com empate por `code` crescente.
-3. **`sel`.**
+   `c = (pos, eid, code, rank, es, cs, traits, type)`, na **ordem de emissão**. `rank` é a posição do conceito na
+   lista da entidade (0 = primeiro); só aparece no traço e não é usado por nenhuma regra.
+3. **`sel`** (`core.py:98-113`, A02).
    - `all` mantém tudo.
-   - `top1` mantém, por entidade, só o candidato de `rank = 1`. Com `occ = per_entity_any`, a "entidade" é o grupo de
-     entidades de mesmo `Id` (R30); com os outros níveis de `occ`, é cada entidade do array.
-4. **`occ` (registros).** Os candidatos são percorridos na ordem (entidade no array, depois conceito).
-   - `last_upsert`: um registro por `code`. `es` e `cs` vêm do **último** candidato do código. Os traços são a união
-     dos traços das entidades de todos os candidatos do código, e o score de cada nome vem do último candidato cuja
-     entidade tem esse nome. O `type` vem do último candidato.
-   - `first_upsert`: igual, mas com o **primeiro** candidato, para scores e para traços.
-   - `per_entity_any`: um registro por `(eid, code)`, com a regra `last_upsert` dentro do mesmo `eid`. Isso funde
-     entidades de `Id` repetido, como o upsert da V2 (R30). Os traços são os das entidades desse `eid`.
-5. **Predicados por registro.** O registro é aprovado se passa em todos:
-   - `trait` (tabela de 3.3);
-   - `ent_thr`: `es ≥ t`, ou `es > t` na variante `gt` (§4.3);
-   - `icd_thr`: `cs ≥ t`, ou `cs > t` na variante `gt`;
-   - `map`: o portão ou a projeção de 1.2 tem de produzir chave. Um `unmapped` reprova esse predicado, mas continua
-     contado como `unmapped`.
-6. **Chave e presença.** Cada registro aprovado gera a sua chave no espaço do contraste (1.3), e a presença é a de 1.4.
+   - `top1` trabalha sempre por **grupo de `Id`**, qualquer que seja o nível de `occ`:
+     1. dentro do grupo, para cada código, fica só o **último** candidato desse código na ordem de emissão;
+     2. entre esses, fica o de menor chave `(−cs, collation_key(code))`, onde `collation_key` imita a ordenação
+        MySQL `utf8mb4_0900_ai_ci` (`evidence.py:27-45`: `_` e `.` antes de dígitos, dígitos antes de letras, letras
+        sem distinção de caixa).
 
-**Traço de decisão** (materializado em L2-M, §7): para cada registro, a chave, os candidatos membros, `es`, `cs`, os
-traços, `verdict ∈ {pass, fail}` e `failed ⊆ {trait, ent_thr, icd_thr, map}`, com **todos** os predicados que
-reprovaram (não só o primeiro). Também os candidatos descartados por `sel`, com motivo `sel`.
+     Resta um candidato por grupo de `Id`. Como os códigos restantes são distintos, não há outro desempate. A
+     auditoria propôs `(cs desc, code asc, posição asc)` sobre todos os candidatos do grupo; o núcleo difere dela no
+     passo 1 (o último candidato de cada código) e na ordenação por colação, e **o núcleo prevalece**.
+4. **`occ` (registros)** (`core.py:116-171`). Os candidatos mantidos por `sel` são percorridos na ordem de emissão.
+   - `last_upsert`: um registro por `code`. `es`, `cs` e `type` vêm do **último** candidato do código. Os traços são
+     a união dos traços das entidades dos candidatos do código, e o score de cada nome vem do último candidato cuja
+     entidade tem esse nome.
+   - `first_upsert`: igual, mas com o **primeiro** candidato, para scores, tipo e traços.
+   - `per_entity_any`: um registro por `(eid, code)`. `es`, `cs` e `type` vêm do último candidato do par. Os traços
+     são os de **todas** as entidades do grupo de `Id` (inclusive as sem conceitos ou cujos candidatos `sel`
+     descartou), com o score do último na ordem do array (upsert da V2 em `(med, Id, nome)`, `core.py:134-139`).
+5. **Predicados por registro** (`core.py:244-260`, todos avaliados, sem curto-circuito). O registro é aprovado se
+   passa em todos:
+   - `trait` (tabela de 3.3);
+   - `ent_thr`: `es ≥ t` (variante `alt`: `es > t`, só no universo de §8);
+   - `icd_thr`: `cs ≥ t` (idem);
+   - `map`: o **portão** do nível (1.2) tem de aprovar o código. Em `cm_gated` é o portão V1; em `cm_ungated` não há
+     portão; nos níveis `who_*` o portão é "a projeção do próprio nível existe".
+6. **Chave e presença.** Cada registro aprovado recebe a chave no espaço do contraste (1.3). Registro aprovado sem
+   chave no espaço vai para `unmapped` (só acontece com `cm_ungated` no espaço OMS). A presença é a de 1.4.
+
+**Traço de decisão** (`core.py:360-385`; materializado em L2-M e devolvido por `evaluate`, §7): os candidatos (com
+`selected`), e por registro a chave, os membros, o candidato-fonte, `es`, `cs`, os traços e uma decisão por estágio.
+Neste SPEC, `verdict ∈ {pass, fail}` e `failed ⊆ {trait, ent_thr, icd_thr, map}` resumem essas decisões: `trait`
+reprova se qualquer estágio de traço (`trait_veto`, `trait_hyp`, `trait_required`, `trait_type`) reprova. `failed`
+lista **todos** os predicados que reprovaram.
 
 ### 3.3 Regras de traço
 
@@ -176,9 +228,10 @@ Registro sem traços reprova em `v1` e em `v1_hyp_le_0.6` (por `valid_trait`) e 
 **EX-04 (`sel`).** Entidade 1 (`es` 0,90, DIAGNOSIS) com conceitos `E11.9` 0,80 e `E11.65` 0,70. Entidade 2 (`es`
 0,90, SYMPTOM) com `R50.9` 0,75 e `J45.0` 0,75, um empate. Preset V1 no espaço CM:
 - `sel = all` → `{E11.9, E11.65, R50.9, J45.0}`;
-- `sel = top1` → `{E11.9, J45.0}` (empate resolvido por código crescente).
+- `sel = top1` → `{E11.9, J45.0}` (empate de `cs` resolvido pela colação do código: `J45.0` antes de `R50.9`).
 
-**EX-05 (`occ`).** Cinco entidades `DX_NAME` com DIAGNOSIS 0,90, exceto onde indicado:
+**EX-05 (`occ`).** Cinco entidades `DX_NAME`, com `Id` distintos. "–" na coluna de traços significa o traço
+padrão DIAGNOSIS 0,90 (A21):
 
 | entidade | `es` | traços | conceito |
 |---|---|---|---|
@@ -234,8 +287,15 @@ Limiares 0,60, `sel = all`, `map = cm_gated`, espaço CM:
 **Botões de atributo.** `low_conf_thr` (0,70, `fl_low_confidence`) e `icd_hi` (0,60, rótulo HIGH) nunca entram em
 `D` para alvos de presença.
 
-**Níveis de teste.** Os níveis numéricos usados no teste são sorteados no congelamento (P4) de uma lista selada que
-não está neste documento, e diferem dos níveis de dev/cal. A lista exclui todo valor queimado (§0, R28).
+**Níveis de teste** (R28, D7.5, A20).
+- Só `ent_thr` e `icd_thr` têm níveis de teste próprios. Os fatores categóricos (`occ`, `sel`, `trait`, `map`) não
+  têm: a novidade do teste vem dos grupos de teste e das combinações de contraste não usadas em dev/cal.
+- **Geração da lista selada, no congelamento P4:** grade de valores com passo 0,005 em [0,50; 0,75], menos todo valor
+  queimado (citado em `docs/design/`, neste SPEC ou nos exemplos, inclusive 0,575 e 0,625 do desenho §C) e menos os
+  níveis de dev/cal; sorteio de 4 valores com semente gerada no congelamento. O SHA-256 da lista (JSON canônico, com
+  a semente) é publicado no registro de congelamento; o conteúdo fica só no pacote de verdade.
+- Nos contrastes de teste, o nível x0 dos limiares é o do preset V1 (0,60), salvo contraste que declare outra base de
+  dev/cal; os níveis selados entram como nível x1.
 
 ### 4.2 Limite de fatores
 
@@ -245,16 +305,24 @@ contra nível de x1. Um bundle declarado conta como um fator (4.4).
 ### 4.3 Variantes de implementação (espaço K)
 
 Uma **variante** descreve como o código que implementa um nível pode de fato se comportar. Nas execuções do
-benchmark, todas as variantes são `std`. As variantes alternativas só existem nas histórias do universo de
-identificação (§8), como incerteza sobre o código quando ele não pode ser executado nem inspecionado por traço.
+benchmark as variantes são `std`, exceto nas execuções da família I que realizam `alt` (abaixo). No universo de
+identificação (§8), as variantes representam a incerteza sobre o código quando ele não pode ser executado nem
+inspecionado por traço.
 
-| fator, nível | `std` | `alt` |
-|---|---|---|
-| `ent_thr`, `icd_thr` (qualquer t) | `≥ t` | `> t` |
-| `trait = v1` | veto em `hyp > 0,65` | veto em `hyp > 0,60` |
-| `occ = last_upsert` | último candidato | primeiro candidato |
-| `map = cm_gated` | com portão | sem portão |
-| demais | única | – |
+| fator, nível | `std` | `alt` | origem da hipótese (A07) |
+|---|---|---|---|
+| `ent_thr`, `icd_thr` (qualquer t) | `≥ t` | `> t` | V1 usa `≥ 0,6` (F1 §2.3, passo 4); o `link` da era `map` (0e43ed9) usava `> 0,7` (`mapa_codigo_healdb.md` §0; não está em F1) |
+| `trait = v1` | veto em `hyp > 0,65` | veto em `hyp > 0,60` (≡ `v1_hyp_le_0.6`) | divergência documentação × código, F1 §6 item 2 |
+| `occ = last_upsert` | último candidato | primeiro candidato (≡ `first_upsert`) | "vale a última ocorrência" depende do upsert `ON DUPLICATE KEY UPDATE`, F1 §2.2; o gerador de `extend` nunca foi commitado, F1 §2.4 |
+| `map = cm_gated` | com portão | sem portão (≡ `cm_ungated`) | `extend` é a md sem o portão, F1 §1 e §2.3 |
+| demais | única | – | – |
+
+Só o `>` dos limiares é comportamento novo; as outras variantes `alt` repetem o comportamento de um nível par. O
+modelo é decisão registrada (D7.7), com duas condições (decisões GATE 2, item 3):
+- H1b é relatada também com `K = ∅` (sem variantes `alt`), como sensibilidade pré-declarada;
+- parte das execuções novas da família I **realiza** a variante `alt`: o código executado tem o rótulo do nível
+  (por exemplo `trait = v1`) e o comportamento `alt`. Assim as duas histórias ocorrem de fato, e a verdade dessas
+  execuções usa a variante `alt`.
 
 A variante é atribuída por (fator, execução): `κ0(f)` vale para a execução x0 e `κ1(f)` para x1. Num híbrido, o
 fator `f` usa o par (nível, variante) da execução de onde vem o seu nível.
@@ -304,20 +372,51 @@ executado pode ser o declarado ou o seu par, `v1_hyp_le_0.6 ↔ v1`, `last_upser
 
 - **Definição.** Um certificado `dummy(f, a)` afirma: para todo `S ⊆ D ∖ {f}`, `state_{S ∪ {f}}(a) = state_S(a)`. O
   avaliador confere contra a tabela-verdade. Um certificado falso torna a resposta **errada** (§9.3).
-- **Regras de referência** (`semantics.dummy`). São corretas, mas incompletas: devolvem `None` quando não decidem.
-  Candidatos "de `a`" são os que projetam para a chave de `a` em algum nível de `map` do contraste.
-  1. `ent_thr` com níveis t0 e t1 (variante `std`): irrelevante se nenhum candidato de `a` tem `es` em
-     `[min, max)`. Com `icd_thr`, o mesmo para `cs`.
-  2. `sel`: irrelevante se todo candidato de `a` tem `rank = 1`.
-  3. `occ`: irrelevante se cada código de `a` tem um único candidato (e um único `eid`).
-  4. `map` entre `cm_gated` e `who_exact_fb` no espaço OMS: sempre irrelevante (1.3).
+- **Regras de referência** (`pipeline/semantics.py`, lead α). São corretas, mas incompletas: devolvem `None` quando
+  não decidem, e nunca `False`. Leem só a evidência do medicamento de `a` e a hierarquia; não executam híbridos.
+  - **Variantes de patch.** Cada regra é aplicada à evidência de `a.med` em **todo** subconjunto dos patches do
+    contraste que editam esse medicamento, e só certifica se valer em todos (isso cobre `D` com `patch:*` que alterem
+    `es`, `cs` ou traços de candidatos de `a`, A02).
+  - **Candidatos relevantes de `a`:** os candidatos de `a.med` cujo código projeta para a chave de `a` em algum dos
+    níveis de `map` do contraste. **Pool de entidades:** as entidades desses candidatos mais todas as entidades dos
+    seus grupos de `Id`.
+  0. **Triviais:** `f ∉ D` → irrelevante; medicamento `UNAVAILABLE` → irrelevante; `patch:<id>` que não edita
+     `a.med` → irrelevante; outro `patch:*` ou fator `prep`/`acm` → `None`.
+  1. **Limiar** (`ent_thr` com níveis t0, t1): irrelevante se nenhum candidato relevante tem `es` em
+     `[min(t0,t1), max(t0,t1))`. `icd_thr`: o mesmo com `cs`.
+  2. **`sel`:** irrelevante se todo candidato relevante é o candidato mantido por `top1` no seu grupo de `Id`
+     (3.2 passo 3). Não usa `rank`: com `Id` duplicado, o candidato pode ser o primeiro da sua entidade e não o do
+     grupo (A02, EX-25).
+  3. **`occ`:** irrelevante se os candidatos relevantes têm códigos distintos **e** `Id` distintos, **e** cada um
+     desses `Id` pertence a uma única entidade. Então cada registro de `a` tem um só membro e os mesmos traços sob
+     qualquer nível de `occ` (EX-26).
+  4. **`map`:** irrelevante se, para todo código da evidência, "passa no portão e projeta para a chave de `a`" tem o
+     mesmo valor nos dois níveis. Inclui `cm_gated` × `who_exact_fb` no espaço OMS (1.3).
+  5. **`trait`:** irrelevante se, para todo subconjunto não vazio do pool de entidades (união dos nomes de traço; cada
+     score de HYPOTHETICAL presente, ou nenhum) e todo tipo de candidato relevante, as duas regras de 3.3 dão o mesmo
+     veredito. Pool com mais de 10 entidades → `None`.
+
+  Mudanças em relação à v0.1: regra 1 sobre as variantes de patch; regra 2 pelo `top1` do grupo de `Id` (não pelo
+  `rank`); regra 3 com `Id` único; regra 4 generalizada; regras 0 e 5 novas. O lead α valida as regras com um teste
+  de solidez por propriedade contra força bruta, com `Id` duplicado.
 - **Monotonicidade.** A única propriedade assumida: baixar um limiar só pode fazer uma associação passar de ausente
   para presente, com os outros fatores fixos. Nada mais é monótono. A suficiência `S ↦ state_S(a)` é medida como não
   monótona.
 
 **EX-15.** No contraste por componentes de EX-14, as regras certificam `sel`, `map`, `ent_thr` (nenhum `es` em
-[0,60; 0,70)) e `icd_thr` (nenhum `cs` em [0,30; 0,60)). `trait` também é irrelevante na tabela-verdade, mas nenhuma
-regra o certifica: o resultado é `None`. `occ` não é certificado.
+[0,60; 0,70)), `icd_thr` (nenhum `cs` em [0,30; 0,60)) e `trait` (regra 5: em todo subconjunto de {e1, e2}, `v1` e
+`v2` concordam, porque NEGATION veta nas duas e DIAGNOSIS com tipo `DX_NAME` passa nas duas). `occ` não é
+certificado (C61 tem dois candidatos) e de fato não é irrelevante.
+
+**EX-25 (`Id` duplicado, contraexemplo de `sel`, A02).** Duas entidades com `Id` 1: e1 com `C61` 0,90 e e1′ com
+`E11.9` 0,95; `trait = v2`, `occ = per_entity_any`, espaço CM; `sel`: `all` → `top1`. C61 vai de presente a ausente,
+porque o `top1` do grupo `Id` 1 é `E11.9`. A regra 2 da v0.1 (por `rank` na entidade) certificaria `sel`; a regra 2
+atual devolve `None`.
+
+**EX-26 (`Id` duplicado, caso de `occ`, A02).** A mesma evidência, com `sel = top1` e `occ`: `last_upsert` →
+`per_entity_any`. Como o `top1` é sempre por grupo de `Id` (3.2), C61 é descartado nos dois níveis e fica ausente:
+`occ` é de fato irrelevante. O contraexemplo de `occ` da auditoria dependia do `top1` por entidade da v0.1 e não se
+realiza no núcleo. Ainda assim, a regra 3 devolve `None` (o `Id` 1 tem duas entidades): correta, mas incompleta.
 
 ## 5. Contrastes e híbridos
 
@@ -352,7 +451,11 @@ O `state_S(a)` é lido no espaço do contraste. `h_∅` é x0 e `h_D` é x1.
 
 - A verdade usa sempre as configurações **executadas**.
 - O broker do `Env` (§10) executa híbridos com os níveis executados **somente** se a vista tem o vínculo ao código
-  executado. Sem ele, usa os níveis declarados de d0 e d1, com as variantes reais dos níveis usados.
+  executado. Sem ele, usa os níveis declarados de d0 e d1.
+- **Variante de um nível no replay** (A21): cada fator usa a variante que o ambiente real tem para o nível usado. Nas
+  execuções do benchmark é a variante da execução de onde o nível vem (`std`, ou `alt` nas execuções da família I que
+  a realizam). No universo de §8, é `κ0(f)` para nível tomado de x0 (ou d0) e `κ1(f)` para nível tomado de x1 (ou d1),
+  mesmo que o nível declarado não tenha sido executado.
 - Validar o replay (`evaluate(∅) == final(x0)` e `evaluate(D) == final(x1)`) é tarefa do método. Um replay pode
   validar nas pontas e ainda assim diferir da verdade nos híbridos intermediários (EX-11).
 - Se, no núcleo, o próprio `h_D` com os níveis executados não reproduz o x1 registrado, o contraste é **inválido**:
@@ -442,16 +545,27 @@ Esta é a busca de referência usada para definir a "necessidade de orçamento" 
    - pular `S` se é inadmissível (fica "desconhecido");
    - senão, avaliar. Se é suficiente, registrar.
 3. `D` é mínimo se nenhum suficiente achado está contido nele.
+4. **Completude** (A13): a família achada é completa se o orçamento não acabou **e** todo `S` pulado por ser
+   inadmissível contém propriamente algum suficiente achado (a condição de 6.1). Senão é marcada incompleta, mesmo sem
+   esgotar o orçamento (EX-28).
 
 - Todo `S` avaliado teve os seus subconjuntos próprios avaliados ou podados, então todo suficiente achado é mínimo
   mesmo sem monotonicidade.
 - Se o orçamento acaba no meio, o resultado é uma família parcial verificada, marcada incompleta.
+- Os certificados dummy usados na poda são os das regras de referência de 4.6, aplicáveis só se a vista mostra a
+  evidência (resposta completa ou top-1); em L1 não há poda por dummy.
 - Com várias consultas num contraste, a busca é conjunta: `S` só é pulado se é podado para **todas** as consultas
   ainda abertas.
 
 **EX-16.** `D = {A, B, C}`, suficientes `{A}`, `{A,C}`, `{B,C}` e `{A,B,C}`.
 - Orçamento ilimitado: avalia ∅, D, A, B, C e BC, em 6 avaliações. `F = {{A},{B,C}}`, completa.
 - Orçamento 5: para antes de BC, com `{{A}}` parcial e incompleta.
+
+**EX-28 (BFS com inadmissíveis, A13).** `D = {A, B, C}`.
+- (a) `{A}` inadmissível; suficientes entre os admissíveis: `{B,C}` e `D`. A BFS avalia ∅, D, B, C, AB, AC e BC (7),
+  acha `{{B,C}}` e marca **incompleta**: `{A}` foi pulado e não contém nenhum suficiente.
+- (b) `{A,B}` inadmissível; suficientes: `{A}`, `{A,C}` e `D`. A BFS avalia ∅, D, A, B, C e BC (6), acha `{{A}}` e
+  marca **completa**: `{A,B}` contém `{A}`.
 
 ## 7. Perfis de evidência, capacidades e orçamento
 
