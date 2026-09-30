@@ -1,0 +1,480 @@
+{
+  "derived": {
+    "repro/corpus_groups.csv": {
+      "sha256": "a99a2bf8f169471ea6d2ab39a9f534767bffbfc51ba8dc2b5a1b4d613461e5fa"
+    },
+    "repro/split_manifest.csv": {
+      "sha256": "19aaca6e8b527e1e97738e022d22f0e125e9fb669bbb6ea449a3a3ee8c41761b"
+    }
+  },
+  "dumps": {
+    "g0327_DumpHealDBOpenSource20250327/DumpHealDBOpenSource20250327/healdb_hd_int_med_disease_api_response.sql": {
+      "bytes": 70119293,
+      "sha256": "c5aaf63a2ad30b79d8d9904dfeb875fd402e3814e82c34d5810bf883643b2abb",
+      "sha256_in_snapshot_manifest": "c5aaf63a2ad30b79d8d9904dfeb875fd402e3814e82c34d5810bf883643b2abb"
+    },
+    "g0327_DumpHealDBOpenSource20250327/DumpHealDBOpenSource20250327/healdb_hd_translate_eng_leaflet_section.sql": {
+      "bytes": 8045676,
+      "sha256": "3db88cc53de67004f1799e80e40d8730af79cce11440c40811fd0e00a12dab08",
+      "sha256_in_snapshot_manifest": "3db88cc53de67004f1799e80e40d8730af79cce11440c40811fd0e00a12dab08"
+    },
+    "v1_dump_0711/Dump20250711_Dump_and_Structure/healdb_hd_icd_category.sql": {
+      "bytes": 336411,
+      "sha256": "80193e05ab25bd05ad6fa2b0fe1d945373d3e39e6938e29acaceb68cbf043bfd",
+      "sha256_in_snapshot_manifest": "80193e05ab25bd05ad6fa2b0fe1d945373d3e39e6938e29acaceb68cbf043bfd"
+    },
+    "v1_dump_0711/Dump20250711_Dump_and_Structure/healdb_hd_icd_group.sql": {
+      "bytes": 45944,
+      "sha256": "ed4e3332c68d59da9dd22b55825c4263efcdb0d2a05bb3b524ab6e332eba1d96",
+      "sha256_in_snapshot_manifest": "ed4e3332c68d59da9dd22b55825c4263efcdb0d2a05bb3b524ab6e332eba1d96"
+    },
+    "v1_dump_0711/Dump20250711_Dump_and_Structure/healdb_hd_icd_subcategory.sql": {
+      "bytes": 2436876,
+      "sha256": "ffd5fd17c4e54ed0af3a2741f332376e49fc10f2c9c6d166938205cf6f1a9b24",
+      "sha256_in_snapshot_manifest": "ffd5fd17c4e54ed0af3a2741f332376e49fc10f2c9c6d166938205cf6f1a9b24"
+    },
+    "v1_dump_0711/Dump20250711_Dump_and_Structure/healdb_hd_int_med_disease_api_response.sql": {
+      "bytes": 157008125,
+      "sha256": "34d9b6c6d69ff8bb41e1e1c6c1f9c9918d3876cd5ac64604b3e0a4b3c439ca9a",
+      "sha256_in_snapshot_manifest": "34d9b6c6d69ff8bb41e1e1c6c1f9c9918d3876cd5ac64604b3e0a4b3c439ca9a"
+    },
+    "v1_dump_0711/Dump20250711_Dump_and_Structure/healdb_hd_int_med_disease_entity.sql": {
+      "bytes": 74670702,
+      "sha256": "08497e0e587ec292b7dafef607ebbdeb14448b5be33778c7ae1960b544935be2",
+      "sha256_in_snapshot_manifest": "08497e0e587ec292b7dafef607ebbdeb14448b5be33778c7ae1960b544935be2"
+    },
+    "v1_dump_0711/Dump20250711_Dump_and_Structure/healdb_hd_int_med_disease_trait.sql": {
+      "bytes": 21899554,
+      "sha256": "1141fc1037810e4837a138aef9b26585d380c7f335ced58f88076eaf1c8005b8",
+      "sha256_in_snapshot_manifest": "1141fc1037810e4837a138aef9b26585d380c7f335ced58f88076eaf1c8005b8"
+    },
+    "v1_dump_0711/Dump20250711_Dump_and_Structure/healdb_hd_medication.sql": {
+      "bytes": 1012383,
+      "sha256": "fbfdf89ee99c56cd7122aa7a8ab1de066564ca342d1991f79c4362f6d4476ab4",
+      "sha256_in_snapshot_manifest": "fbfdf89ee99c56cd7122aa7a8ab1de066564ca342d1991f79c4362f6d4476ab4"
+    },
+    "v1_dump_0711/Dump20250711_Dump_and_Structure/healdb_hd_medication_disease.sql": {
+      "bytes": 4477165,
+      "sha256": "ab84af55e97985c7fee413c9c34c64911642cb841ff44de7415f9e71270e5cad",
+      "sha256_in_snapshot_manifest": "ab84af55e97985c7fee413c9c34c64911642cb841ff44de7415f9e71270e5cad"
+    },
+    "v1_dump_0711/Dump20250711_Dump_and_Structure/healdb_hd_medication_disease_extend.sql": {
+      "bytes": 4642745,
+      "sha256": "f7693fe7835bba4ee47327964912a867da38ed7ce0570118e5f942f9c13f2337",
+      "sha256_in_snapshot_manifest": "f7693fe7835bba4ee47327964912a867da38ed7ce0570118e5f942f9c13f2337"
+    },
+    "v1_dump_0711/Dump20250711_Dump_and_Structure/healdb_hd_translate_eng_leaflet_section.sql": {
+      "bytes": 17131650,
+      "sha256": "1f90503fc11ad57bb1cdf60a50f4519929f25de12434f258288e9c882a4f18f9",
+      "sha256_in_snapshot_manifest": "1f90503fc11ad57bb1cdf60a50f4519929f25de12434f258288e9c882a4f18f9"
+    },
+    "v2_dump_0828/DumpHealDBOpenSource_20260828/healdb_hd_icd_category.sql": {
+      "bytes": 336411,
+      "sha256": "e28862ec3c19d4d2145ce83b7e7af55fd03dc5f4fed6d7e8d0f1606230f1d5df",
+      "sha256_in_snapshot_manifest": "e28862ec3c19d4d2145ce83b7e7af55fd03dc5f4fed6d7e8d0f1606230f1d5df"
+    },
+    "v2_dump_0828/DumpHealDBOpenSource_20260828/healdb_hd_icd_group.sql": {
+      "bytes": 45944,
+      "sha256": "5a93ed77fb4cdfd2b177085110a1df3da6b8df335aa2e51f3e5a2023e92e32e2",
+      "sha256_in_snapshot_manifest": "5a93ed77fb4cdfd2b177085110a1df3da6b8df335aa2e51f3e5a2023e92e32e2"
+    },
+    "v2_dump_0828/DumpHealDBOpenSource_20260828/healdb_hd_icd_subcategory.sql": {
+      "bytes": 2436876,
+      "sha256": "537058794a035a406c34e8e206b21df7df20fabe3bc2f6ad627e19e822dc2c29",
+      "sha256_in_snapshot_manifest": "537058794a035a406c34e8e206b21df7df20fabe3bc2f6ad627e19e822dc2c29"
+    },
+    "v2_dump_0828/DumpHealDBOpenSource_20260828/healdb_hd_int_med_disease_api_response.sql": {
+      "bytes": 84813143,
+      "sha256": "b91d73af5a9a485b76f8dc5e8cb9ef292bea969d339f69d85a390d2c3b126353",
+      "sha256_in_snapshot_manifest": "b91d73af5a9a485b76f8dc5e8cb9ef292bea969d339f69d85a390d2c3b126353"
+    },
+    "v2_dump_0828/DumpHealDBOpenSource_20260828/healdb_hd_int_med_disease_cutoff_audit.sql": {
+      "bytes": 28874625,
+      "sha256": "1287c2fbb29d9f35959f1753ee97c7eb32094af01ac2c29869999d700f0037ec",
+      "sha256_in_snapshot_manifest": "1287c2fbb29d9f35959f1753ee97c7eb32094af01ac2c29869999d700f0037ec"
+    },
+    "v2_dump_0828/DumpHealDBOpenSource_20260828/healdb_hd_int_med_disease_entity_icd.sql": {
+      "bytes": 104048232,
+      "sha256": "7895edfcfcf48a2b4859d6500872fc57d1e6739c97b7007fcb448e82f2bee9de",
+      "sha256_in_snapshot_manifest": "7895edfcfcf48a2b4859d6500872fc57d1e6739c97b7007fcb448e82f2bee9de"
+    },
+    "v2_dump_0828/DumpHealDBOpenSource_20260828/healdb_hd_int_med_disease_entity_trait.sql": {
+      "bytes": 4396290,
+      "sha256": "f2c52e736f78738cbec569467a04bbaac43d10c6c417922c2584c25c13545679",
+      "sha256_in_snapshot_manifest": "f2c52e736f78738cbec569467a04bbaac43d10c6c417922c2584c25c13545679"
+    },
+    "v2_dump_0828/DumpHealDBOpenSource_20260828/healdb_hd_medication_disease.sql": {
+      "bytes": 3023364,
+      "sha256": "8ecd6b444035a82180d8b89a6eb3ad6cdcd18fcae0acbfd0fb023de95963aebc",
+      "sha256_in_snapshot_manifest": "8ecd6b444035a82180d8b89a6eb3ad6cdcd18fcae0acbfd0fb023de95963aebc"
+    },
+    "v2_dump_0828/DumpHealDBOpenSource_20260828/healdb_hd_translate_eng_leaflet_section.sql": {
+      "bytes": 17131650,
+      "sha256": "59c624f2ad1db826b18bf52082884abb65f4039cda49c6d26eb2c9439f999c56",
+      "sha256_in_snapshot_manifest": "59c624f2ad1db826b18bf52082884abb65f4039cda49c6d26eb2c9439f999c56"
+    }
+  },
+  "generated_by": "habench.historical.sources build",
+  "historical_code": {
+    "blobs": {
+      "405a10c": {
+        "src/nlp_extraction/extract_diseases_from_indications.py": "8f71d197d04b4c81a4fdd91ef9809210dc453561",
+        "src/nlp_extraction/link_medications_with_diseases.py": "c9c4aeb9bfbf3aedfe46ee3434f98b2b5afd60e3",
+        "src/nlp_extraction/main_nlp_extraction.py": "2bf24158b1edeb8d1ef0d093416580d2cff134f4",
+        "src/nlp_extraction/process_disease_data_json.py": "02d294c693d3b239dae349d78911e15649776571",
+        "src/nlp_extraction/translate_leaflet_sections.py": "6843d2efecb7ab72606b294de414a47fc301065c"
+      },
+      "8ea0479": {
+        "src/nlp_extraction/extract_diseases_from_indications.py": "e5f6b9a1aa0681f0299f3ccbcb20971f405a4aff",
+        "src/nlp_extraction/link_medications_with_diseases.py": "71f484bb9b2cccc22fc623920cd8731030331a96",
+        "src/nlp_extraction/main_nlp_extraction.py": "364b2d0dac78cfa5a670f33d8741044782803f2c",
+        "src/nlp_extraction/process_disease_data_json.py": "db004330cc734a2a42a121e0a1e38b630de4ed44",
+        "src/nlp_extraction/translate_leaflet_sections.py": "6843d2efecb7ab72606b294de414a47fc301065c"
+      }
+    },
+    "commits": {
+      "0e43ed9": "0e43ed9168401e390e7d0f0fa7a17ab81f1553c8",
+      "2d1dc7f": "2d1dc7f5b56984304481b7ecdb0b0c674ffb509d",
+      "405a10c": "405a10c0e422f312cae0e4508e4fae1c7862b6dd",
+      "4895898": "48958986f75c707b08d832a2adb5c57c6d3dd2fc",
+      "8ea0479": "8ea04790481c26b6e799df1bb85d383468d8746a",
+      "c5b0db1": "c5b0db1c48b3a1947381f524def82b11e5aadc11"
+    },
+    "repo": "HealDB"
+  },
+  "redu": {
+    "doi": "10.25824/redu/24I1FH",
+    "files": [
+      {
+        "bytes_stated": 357,
+        "dataset_versions": [
+          1,
+          2
+        ],
+        "dataverse_file_id": 17944,
+        "file_versions": [
+          1,
+          3
+        ],
+        "local": {
+          "bytes": 33598,
+          "md5": "c5568f8aa85205c7eb35857c698d2deb",
+          "name": "17944__HealDB_Metadata_Open_Source.xlsx",
+          "sha256": "d094ed073d6a081d0d4bc986a1f77d772a4ca901813bf27a944c5d1bd0ded947"
+        },
+        "md5_match": true,
+        "md5_stated": "c5568f8aa85205c7eb35857c698d2deb",
+        "name": "HealDB_Metadata_Open_Source.tab"
+      },
+      {
+        "bytes_stated": 260798,
+        "dataset_versions": [
+          1,
+          2
+        ],
+        "dataverse_file_id": 17946,
+        "file_versions": [
+          1
+        ],
+        "local": {
+          "bytes": 260798,
+          "md5": "3555075aa045655d7d54e6317191ccb8",
+          "name": "17946__Model_healdb_open_source.png",
+          "sha256": "cb0dd14418c3079731636abc15e39cc3d877a3714604abbdecdddb6548b2d4e6"
+        },
+        "md5_match": true,
+        "md5_stated": "3555075aa045655d7d54e6317191ccb8",
+        "name": "Model_healdb_open_source.png"
+      },
+      {
+        "bytes_stated": 96422419,
+        "dataset_versions": [
+          1,
+          2
+        ],
+        "dataverse_file_id": 17948,
+        "file_versions": [
+          1
+        ],
+        "local": {
+          "bytes": 96422419,
+          "md5": "6bb5a95859be8a3797ddfef91f70b244",
+          "name": "17948__DumpHealDBOpenSource_Dump_and_Structure_20250711.zip",
+          "sha256": "aadcafb15a300af26f45e21f2fbf4170b825c135883a7824ef6ab6e995c942d1"
+        },
+        "md5_match": true,
+        "md5_stated": "6bb5a95859be8a3797ddfef91f70b244",
+        "name": "DumpHealDBOpenSource_Dump_and_Structure_20250711.zip"
+      },
+      {
+        "bytes_stated": 31489,
+        "dataset_versions": [
+          1,
+          2
+        ],
+        "dataverse_file_id": 17949,
+        "file_versions": [
+          1
+        ],
+        "local": {
+          "bytes": 31489,
+          "md5": "82efaa4ce15eb41f64309a6864fad7ed",
+          "name": "17949__DumpHealDBOpenSource_Structure_20250711.zip",
+          "sha256": "d83cd496680a2a11514244e2382627d68df2f68a30833b2b8399655b97b4a538"
+        },
+        "md5_match": true,
+        "md5_stated": "82efaa4ce15eb41f64309a6864fad7ed",
+        "name": "DumpHealDBOpenSource_Structure_20250711.zip"
+      },
+      {
+        "bytes_stated": 264612,
+        "dataset_versions": [
+          2
+        ],
+        "dataverse_file_id": 38264,
+        "file_versions": [
+          2
+        ],
+        "local": {
+          "bytes": 264612,
+          "md5": "3abe1ff0991ba4f6266a91b0ab5cba17",
+          "name": "38264__Model_healdb_open_source-1.png",
+          "sha256": "6243090ab1f85e2b18cd44fd49e9ace89b377279b47740f2162e940efd8da39f"
+        },
+        "md5_match": true,
+        "md5_stated": "3abe1ff0991ba4f6266a91b0ab5cba17",
+        "name": "Model_healdb_open_source-1.png"
+      },
+      {
+        "bytes_stated": 93882031,
+        "dataset_versions": [
+          2
+        ],
+        "dataverse_file_id": 38265,
+        "file_versions": [
+          2
+        ],
+        "local": {
+          "bytes": 93882031,
+          "md5": "554e830ea700e0796d79bd07f4ae07cd",
+          "name": "38265__DumpHealDBOpenSource_Dump_and_Structure_20260828.zip",
+          "sha256": "6690ab6e74ade032a39f37129946cabf125487923eabc11a759881c203620976"
+        },
+        "md5_match": true,
+        "md5_stated": "554e830ea700e0796d79bd07f4ae07cd",
+        "name": "DumpHealDBOpenSource_Dump_and_Structure_20260828.zip"
+      },
+      {
+        "bytes_stated": 557675,
+        "dataset_versions": [
+          2
+        ],
+        "dataverse_file_id": 38266,
+        "file_versions": [
+          2
+        ],
+        "local": {
+          "bytes": 557675,
+          "md5": "cbecf93c4e4ea1c2c88f8459ca4e6e86",
+          "name": "38266__Model_healdb_open_source.svg",
+          "sha256": "cfd139256c626742908516c0af09841f3cbddc55961732bf90489eb5504f0867"
+        },
+        "md5_match": true,
+        "md5_stated": "cbecf93c4e4ea1c2c88f8459ca4e6e86",
+        "name": "Model_healdb_open_source.svg"
+      },
+      {
+        "bytes_stated": 32272,
+        "dataset_versions": [
+          2
+        ],
+        "dataverse_file_id": 38267,
+        "file_versions": [
+          2
+        ],
+        "local": {
+          "bytes": 32272,
+          "md5": "90681f9cbdee2c9b9bd83dd145f25f05",
+          "name": "38267__DDLsHealDBOpenSource_Structure_20260828.zip",
+          "sha256": "62a61e7fe2189c0802eb2aaacab887888e43feb0a3c39db271e5596cc153af4a"
+        },
+        "md5_match": true,
+        "md5_stated": "90681f9cbdee2c9b9bd83dd145f25f05",
+        "name": "DDLsHealDBOpenSource_Structure_20260828.zip"
+      },
+      {
+        "bytes_stated": 357,
+        "dataset_versions": [
+          2
+        ],
+        "dataverse_file_id": 38268,
+        "file_versions": [
+          4
+        ],
+        "local": {
+          "bytes": 32078,
+          "md5": "3c3b048be441301619a05363677989f6",
+          "name": "38268__HealDB_Metadata_Open_Source-1.xlsx",
+          "sha256": "2b9f3bd0ccfe06ef1fdaec444b65a79aa84f61052b8aa4b946707ecb40cf3217"
+        },
+        "md5_match": true,
+        "md5_stated": "3c3b048be441301619a05363677989f6",
+        "name": "HealDB_Metadata_Open_Source-1.tab"
+      }
+    ]
+  },
+  "reports": {
+    "/home/vinicius/Downloads/Esboco_revisado_HealDB_IC_Unicamp(2).pdf": {
+      "exists": true,
+      "match": true,
+      "sha256_listed": "822750b78c0d3222da05c0a70350fad01c6fdfef34d460bd870cae2e4157a4ff",
+      "sha256_local": "822750b78c0d3222da05c0a70350fad01c6fdfef34d460bd870cae2e4157a4ff"
+    },
+    "/home/vinicius/code/HealDB/doc/PROVENIENCIA_NLP_V1.md": {
+      "exists": true,
+      "match": true,
+      "sha256_listed": "bd466b36d8b70f76119299a0be4138eccf04920f6cb7eb211ea86d31bdedd1f4",
+      "sha256_local": "bd466b36d8b70f76119299a0be4138eccf04920f6cb7eb211ea86d31bdedd1f4"
+    },
+    "/home/vinicius/code/HealDB/doc/RECONSTRUCAO_V1_MATRIZ.md": {
+      "exists": true,
+      "match": true,
+      "sha256_listed": "856d5c31b7668d5807ac25fcde5942e8ed0c225a6279565b7a2f110b50ebd515",
+      "sha256_local": "856d5c31b7668d5807ac25fcde5942e8ed0c225a6279565b7a2f110b50ebd515"
+    },
+    "Protocolo_Experimental_HealDB_Revisado_v0_2.md": {
+      "exists": true,
+      "match": true,
+      "sha256_listed": "7bfed6c0d54d814312b460b8e2cf05ae9a1df4d3cfbd64267f813205b797a34c",
+      "sha256_local": "7bfed6c0d54d814312b460b8e2cf05ae9a1df4d3cfbd64267f813205b797a34c"
+    }
+  },
+  "snapshots": {
+    "note": "Parquet bytes may depend on the pyarrow version; snapshot_sha256 is from the build manifests.",
+    "pyarrow_version": "25.0.1",
+    "tables": {
+      "g0327": {
+        "hd_int_med_disease_api_response": {
+          "rows": 7447,
+          "snapshot_sha256": "6eb3e4262b8dc4dff8ae30dd8489785a1d2a76dbab7a28c62e2bd81bb722aed6"
+        },
+        "hd_translate_eng_leaflet_section": {
+          "rows": 7473,
+          "snapshot_sha256": "97b1be02362aef64f44ac0aa2af53df011eebc612ca9f291495ff9ee74ce0719"
+        }
+      },
+      "v1": {
+        "hd_icd_category": {
+          "rows": 2045,
+          "snapshot_sha256": "d006ef0b75ea20f523425234053582ae9ddf7e6a1bc7c37fb934de203c39b286"
+        },
+        "hd_icd_group": {
+          "rows": 275,
+          "snapshot_sha256": "1a741825249b3a242d360bbebf3bc1304d4ac2f254e8e8c632d6842c21c92580"
+        },
+        "hd_icd_subcategory": {
+          "rows": 12451,
+          "snapshot_sha256": "ffafa921abda48b14dcfab9d6d55b35657073bc88b2ae8a2058d0c868f8c32d6"
+        },
+        "hd_int_med_disease_api_response": {
+          "rows": 7447,
+          "snapshot_sha256": "be390a788ed14391c28032518da6cec7b9b2d0e2f5ab6f468398929eb9f74a89"
+        },
+        "hd_int_med_disease_entity": {
+          "rows": 274010,
+          "snapshot_sha256": "8e57c18d11a3a681c5c0997f7a7425cb11bad0a486153c7f060f02423642bb78"
+        },
+        "hd_int_med_disease_trait": {
+          "rows": 469957,
+          "snapshot_sha256": "6e8947eabc7cbb49aae135f43bbd272c91fb7c8afd86ec12aadd9ab0235ede72"
+        },
+        "hd_medication": {
+          "rows": 10548,
+          "snapshot_sha256": "7dc7b2bae84d7c7478046c523412524b1dbea9f2763ab59ff5ddf99a0446779d"
+        },
+        "hd_medication_disease": {
+          "rows": 43194,
+          "snapshot_sha256": "5c1a35ee558d5c134ca4e658ad7582d5af479a04ea649ef33fd12372aa2f05bb"
+        },
+        "hd_medication_disease_extend": {
+          "rows": 44233,
+          "snapshot_sha256": "a50d11b3136bb988bf078e29023034a258bd303f3dbc113b65f4f991f6d0e47b"
+        },
+        "hd_translate_eng_leaflet_section": {
+          "rows": 7473,
+          "snapshot_sha256": "aee2c6760ef023a971664ea33552fbbdec29d6822bd42fa91138fe23504416cb"
+        }
+      },
+      "v2": {
+        "hd_icd_category": {
+          "rows": 2045,
+          "snapshot_sha256": "d006ef0b75ea20f523425234053582ae9ddf7e6a1bc7c37fb934de203c39b286"
+        },
+        "hd_icd_group": {
+          "rows": 275,
+          "snapshot_sha256": "1a741825249b3a242d360bbebf3bc1304d4ac2f254e8e8c632d6842c21c92580"
+        },
+        "hd_icd_subcategory": {
+          "rows": 12451,
+          "snapshot_sha256": "ffafa921abda48b14dcfab9d6d55b35657073bc88b2ae8a2058d0c868f8c32d6"
+        },
+        "hd_int_med_disease_api_response": {
+          "rows": 7447,
+          "snapshot_sha256": "7947f47ed988937592de13da5f4cd249efcd60fc705cb12be343f2b486b7358f"
+        },
+        "hd_int_med_disease_cutoff_audit": {
+          "rows": 75119,
+          "snapshot_sha256": "b9722982e107f6c42568aa4dfd6adfb451ab42ab1cae46090588b3474eb592be"
+        },
+        "hd_int_med_disease_entity_icd": {
+          "rows": 375595,
+          "snapshot_sha256": "ac5c57d22013661e3248fda2c1cb7e1a5aac8095490d4a573de088a3395c91ba"
+        },
+        "hd_int_med_disease_entity_trait": {
+          "rows": 107543,
+          "snapshot_sha256": "18cb9dbefe4a41dce7a71716e3b17dbbcf6dc669efd0e17f3b76ac6ec552027b"
+        },
+        "hd_medication_disease": {
+          "rows": 27861,
+          "snapshot_sha256": "03bea0cc85994a46200d7d5df86c3cdc5bf66a3efcf448ce1ff8cf7e6e270cb9"
+        },
+        "hd_translate_eng_leaflet_section": {
+          "rows": 7473,
+          "snapshot_sha256": "aee2c6760ef023a971664ea33552fbbdec29d6822bd42fa91138fe23504416cb"
+        }
+      }
+    }
+  },
+  "workspace_scripts": {
+    "out/extend_amostra.csv": {
+      "sha256": "e73b60a75b3359673765b7fa9cb414c74f3c03da460c771739d9a6b9c85fdb1a"
+    },
+    "scripts/acm_text_v1.py": {
+      "sha256": "dbae62f8f7fa58fe6de08b4ba691bc2097a61a6847ea326fad0e2c3d26eccf9c"
+    },
+    "scripts/dumprows.py": {
+      "sha256": "e7b14a3d06ce50e9fb35d954acd0b78cae93175d71bf2ab462dfa4c388eb7796"
+    },
+    "scripts/extend_analysis.py": {
+      "sha256": "e00c8362950de0ec6c9ce14f6417a369148d3c11722a64fe742896fdc1dfb5a0"
+    },
+    "scripts/extend_from_link_405a10c.patch": {
+      "sha256": "d8427dd08f6fe763cfd25d7a5ac63c5c331ac4c86eb24f8078094ade92937e0a"
+    },
+    "scripts/replay_405a10c.sh": {
+      "sha256": "f19809eddeb30923672a1f3442f1fa777cd7f71e9d357615c5f211fdb9efff92"
+    },
+    "scripts/replay_compare.py": {
+      "sha256": "80c190ac0405b110114230a5fa61c982f308c099d36db1807ab9f701022d9913"
+    },
+    "scripts/replay_driver.py": {
+      "sha256": "8514374dd95b88394da98343f1fc718100673814cfbd0fdb7e0826543e921b88"
+    },
+    "scripts/replay_extend.sh": {
+      "sha256": "a901e14694a483f3998ddfcd6bdae6ddf5ee9bb632d795cf76f2d90c4cc50bc9"
+    },
+    "scripts/replay_up.sh": {
+      "sha256": "6e37a61e6d7c989c59e380d63f2c0929149447f4a81bd574e042eed5da11a290"
+    }
+  }
+}

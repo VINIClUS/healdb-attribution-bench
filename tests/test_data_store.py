@@ -103,6 +103,7 @@ EXPECTED = {
     ("v1", "hd_int_med_disease_api_response"): 7447,
     ("v2", "hd_int_med_disease_api_response"): 7447,
     ("g0327", "hd_int_med_disease_api_response"): 7447,
+    ("g0327", "hd_translate_eng_leaflet_section"): 7473,
     ("v1", "hd_int_med_disease_entity"): 274010,
     ("v1", "hd_int_med_disease_trait"): 469957,
     ("v1", "hd_medication_disease"): 43194,
