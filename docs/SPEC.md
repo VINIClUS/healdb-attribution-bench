@@ -185,10 +185,16 @@ Entidade sem conceitos não gera candidato, mas seus traços contam para o seu g
         MySQL `utf8mb4_0900_ai_ci` (`evidence.py:27-45`: `_` e `.` antes de dígitos, dígitos antes de letras, letras
         sem distinção de caixa).
 
-     Resta um candidato por grupo de `Id`. Como os códigos restantes são distintos, não há outro desempate. A
-     auditoria propôs `(cs desc, code asc, posição asc)` sobre todos os candidatos do grupo; o núcleo difere dela no
+     Resta um candidato por grupo de `Id`. Como os códigos restantes são distintos, não há outro desempate.
+
+     **Ordem de saída:** os vencedores saem na ordem da **primeira aparição do seu grupo de `Id`**, não na ordem de
+     emissão (`core.py:104-112`; a docstring de `_select` diz "emission order", mas vale o código). Com `sel = all`, a
+     ordem é a de emissão. A ordem importa para `last_upsert` e `first_upsert` (EX-29).
+
+     A auditoria propôs `(cs desc, code asc, posição asc)` sobre todos os candidatos do grupo. O núcleo difere dela no
      passo 1 (o último candidato de cada código) e na ordenação por colação, e **o núcleo prevalece**.
-4. **`occ` (registros)** (`core.py:116-171`). Os candidatos mantidos por `sel` são percorridos na ordem de emissão.
+4. **`occ` (registros)** (`core.py:116-171`). Os candidatos mantidos por `sel` são percorridos na ordem de saída
+   de `sel` (passo 3).
    - `last_upsert`: um registro por `code`. `es`, `cs` e `type` vêm do **último** candidato do código. Os traços são
      a união dos traços das entidades dos candidatos do código, e o score de cada nome vem do último candidato cuja
      entidade tem esse nome.
@@ -389,8 +395,9 @@ executado pode ser o declarado ou o seu par, `v1_hyp_le_0.6 ↔ v1`, `last_upser
   1. **Limiar** (`ent_thr` com níveis t0, t1): irrelevante se nenhum candidato relevante tem `es` em
      `[min(t0,t1), max(t0,t1))`. `icd_thr`: o mesmo com `cs`.
   2. **`sel`:** irrelevante se todo candidato relevante é o candidato mantido por `top1` no seu grupo de `Id`
-     (3.2 passo 3). Não usa `rank`: com `Id` duplicado, o candidato pode ser o primeiro da sua entidade e não o do
-     grupo (A02, EX-25).
+     (3.2 passo 3) **e**, para cada código, os candidatos relevantes desse código aparecem na mesma ordem relativa na
+     emissão e na saída de `top1`. Não usa `rank`: com `Id` duplicado, o candidato pode ser o primeiro da sua entidade
+     e não o do grupo (A02, EX-25). A condição de ordem vem da ordem de saída de `top1` (EX-30).
   3. **`occ`:** irrelevante se os candidatos relevantes têm códigos distintos **e** `Id` distintos, **e** cada um
      desses `Id` pertence a uma única entidade. Então cada registro de `a` tem um só membro e os mesmos traços sob
      qualquer nível de `occ` (EX-26).
@@ -401,7 +408,7 @@ executado pode ser o declarado ou o seu par, `v1_hyp_le_0.6 ↔ v1`, `last_upser
      veredito. Pool com mais de 10 entidades → `None`.
 
   Mudanças em relação à v0.1: regra 1 sobre as variantes de patch; regra 2 pelo `top1` do grupo de `Id` (não pelo
-  `rank`); regra 3 com `Id` único; regra 4 generalizada; regras 0 e 5 novas. O lead α valida as regras com um teste
+  `rank`) e com a condição de ordem; regra 3 com `Id` único; regra 4 generalizada; regras 0 e 5 novas. O lead α valida as regras com um teste
   de solidez por propriedade contra força bruta, com `Id` duplicado.
 - **Monotonicidade.** A única propriedade assumida: baixar um limiar só pode fazer uma associação passar de ausente
   para presente, com os outros fatores fixos. Nada mais é monótono. A suficiência `S ↦ state_S(a)` é medida como não
@@ -417,7 +424,22 @@ certificado (C61 tem dois candidatos) e de fato não é irrelevante.
 porque o `top1` do grupo `Id` 1 é `E11.9`. A regra 2 da v0.1 (por `rank` na entidade) certificaria `sel`; a regra 2
 atual devolve `None`.
 
-**EX-26 (`Id` duplicado, caso de `occ`, A02).** A mesma evidência, com `sel = top1` e `occ`: `last_upsert` →
+**EX-29 (ordem de saída de `top1`, A02).** Três entidades `DX_NAME` com DIAGNOSIS 0,90: e1 (`Id` 2, `es` 0,90,
+`R50.9` 0,50), e2 (`Id` 1, `es` 0,90, `C61` 0,90) e e3 (`Id` 2, `es` 0,50, `C61` 0,95). Preset V1, espaço CM.
+`top1` mantém e3/`C61` (vencedor do `Id` 2) e e2/`C61` (do `Id` 1), nessa ordem, porque o `Id` 2 aparece primeiro.
+
+| `sel`, `occ` | presentes |
+|---|---|
+| `all`, `last_upsert` | ∅ (`C61` fica com `es` 0,50 de e3) |
+| `all`, `first_upsert` | `{C61}` |
+| `top1`, `last_upsert` | `{C61}` (o último é e2, `es` 0,90) |
+| `top1`, `first_upsert` | ∅ |
+
+**EX-30 (regra 2 e a ordem, A02).** A evidência de EX-29, `occ = last_upsert`, `sel`: `all` → `top1`, consulta
+`C61`. Os dois candidatos `C61` são mantidos por `top1`, mas em ordem inversa, e `C61` vai de ausente a presente.
+Sem a condição de ordem, a regra 2 certificaria `sel` falsamente; com ela, devolve `None`.
+
+**EX-26 (`Id` duplicado, caso de `occ`, A02). A mesma evidência, com `sel = top1` e `occ`: `last_upsert` →
 `per_entity_any`. Como o `top1` é sempre por grupo de `Id` (3.2), C61 é descartado nos dois níveis e fica ausente:
 `occ` é de fato irrelevante. O contraexemplo de `occ` da auditoria dependia do `top1` por entidade da v0.1 e não se
 realiza no núcleo. Ainda assim, a regra 3 devolve `None` (o `Id` 1 tem duas entidades): correta, mas incompleta.
@@ -1255,7 +1277,8 @@ Todos na população de contrastes de teste da família indicada, com o mesmo m�
 - **Identificação:** EX-11 (divergência HYPOTHETICAL), EX-12 (testemunhas).
 - **Lastro, perfis e esquema:** EX-21 (lastro), EX-22 (perfis), EX-23 (validação de saída).
 - **Unmapped:** EX-27 (`who_exact_fb → who_exact`).
-- **Dummy com `Id` duplicado:** EX-25 (`sel`), EX-26 (`occ`).
+- **Dummy com `Id` duplicado:** EX-25 (`sel`), EX-26 (`occ`), EX-30 (`sel` e ordem).
+- **Ordem de saída de `top1`:** EX-29.
 - **BFS com inadmissíveis:** EX-28.
 - **Identificação com `h* ∉ U`:** EX-24.
 - **Pontuação:** EX-S01 a EX-S53.
@@ -1269,7 +1292,7 @@ Uma linha por achado de `docs/auditorias/gate2_spec.md`. Onde a decisão da sess
 | id | mudança | onde |
 |---|---|---|
 | A01 | `W` calculado sobre `U ∪ {h*}`; `W_hi` sobre `U ∪ {classe(h*)}`, `W_lo ⊆ W_hi` por construção; saturação efetiva exige `classe(h*) ∈ U`; prova da partição dos estados; EX-24 (`h* ∉ U` → `indeterminado`) | 8.1, 8.3, EX-24 |
-| A02 | o núcleo é normativo: `top1` sempre por grupo de `Id` (último candidato por código, desempate por colação MySQL), traços de `per_entity_any` de todas as entidades do `Id`; regras dummy 1 (variantes de patch), 2 (vencedor do grupo de `Id`), 3 (`Id` único com entidade única) e 4 reescritas, regras 0 e 5 novas; EX-25, EX-26 | cabeçalho, 3.1, 3.2, 4.6, EX-04, EX-25, EX-26 |
+| A02 | o núcleo é normativo: `top1` sempre por grupo de `Id` (último candidato por código, desempate por colação MySQL), traços de `per_entity_any` de todas as entidades do `Id`; ordem de saída de `top1` pela primeira aparição do grupo de `Id` (EX-29); regras dummy 1 (variantes de patch), 2 (vencedor do grupo de `Id` e ordem relativa por código, EX-30), 3 (`Id` único com entidade única) e 4 reescritas, regras 0 e 5 novas; EX-25, EX-26 | cabeçalho, 3.1, 3.2, 4.6, EX-04, EX-25, EX-26, EX-29, EX-30 |
 | A03 | tabela de aceitação por tipo de certificado e passo 0 do avaliador (descarte fora do log ou fora da célula); regra de derivação por traço; cobertura módulo dummies; EX-21 (e)–(h) | 9.2, EX-21 |
 | A04 | `risco_comprometido` (sem `nao_comprometido`) na calibração e na guarda de H1b; risco literal também relatado | 10.2, 13.1, 13.5, EX-17 |
 | A05 | H1a com `b = 16` primário; `trace` de avaliações do log aceito em L2-R; "identidade por construção"; critério descritivo de armazenamento e tempo | 7.4, 9.2, 13.1 |

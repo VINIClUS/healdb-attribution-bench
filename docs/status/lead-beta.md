@@ -17,12 +17,15 @@ reconferência da sessão principal; β3 não iniciado.
   - `docs/SPEC.md` v0.2 aplica A01, A02, A03, A09, A13 e A14, mais A04, A05, A06, A07, A08, A10, A11, A12, A18, A20
     e A21. O §16 traz o changelog, uma linha por A-id.
   - A semântica do núcleo segue `pipeline/core.py`, citado linha a linha.
-    - `top1` é sempre por grupo de `Id`: último candidato por código, depois colação MySQL.
+    - `top1` é sempre por grupo de `Id`: último candidato por código, depois colação MySQL. Os vencedores saem na
+      ordem da primeira aparição do grupo de `Id`, não na ordem de emissão (EX-29), e isso muda `last_upsert` e
+      `first_upsert`.
     - Em `per_entity_any`, os traços vêm de todas as entidades do `Id`.
     - Nos níveis `who_*`, um código sem projeção reprova em `map` e não vira `unmapped` (corrigi o §1.2 da v0.1).
   - Exemplos novos:
     - EX-24 (`h* ∉ U` → `indeterminado`);
     - EX-25 e EX-26 (`Id` duplicado);
+    - EX-29 (ordem de saída de `top1`) e EX-30 (contraexemplo da regra 2 sem a condição de ordem);
     - EX-27 (`who_exact_fb → who_exact`);
     - EX-28 (a/b, BFS com inadmissíveis);
     - EX-21 (e)–(h) (eval fora do log, trace de L2-R sem avaliação no log, e R-C);
@@ -36,9 +39,11 @@ reconferência da sessão principal; β3 não iniciado.
     - O lastro faz o passo 0: aceitação por tipo, log e célula.
     - `W` é calculado sobre `U ∪ {h*}`, com o estado de identificação.
     - O risco comprometido está implementado.
-  - Teste novo `test_dummy_rules_are_sound_on_random_contrasts`: 600 contrastes aleatórios com `Id` duplicado,
-    patches e todos os fatores; nenhum certificado de referência é falso.
-    - Uma sonda avulsa com 20.000 contrastes deu 0 falsos em 22.014 certificados.
+  - Teste novo `test_dummy_rules_are_sound_on_random_contrasts`: 4.800 contrastes aleatórios com `Id` duplicado e
+    patches (600 livres, 600 com cada fator forçado em `D`, e 600 dirigidos à ordem de `top1`); nenhum certificado de
+    referência é falso.
+    - O gerador dirigido acha o contraexemplo da regra 2 sem a condição de ordem.
+    - Uma sonda avulsa com 51.000 contrastes deu 0 falsos em 41.689 certificados.
 
 ## Em andamento
 
@@ -51,8 +56,8 @@ reconferência da sessão principal; β3 não iniciado.
 
 ## Testes
 
-- `uv run pytest tests/test_spec_examples.py -q` → `86 passed`
-- `uv run pytest -q` → `512 passed`
+- `uv run pytest tests/test_spec_examples.py -q` → `88 passed`
+- `uv run pytest -q` → `514 passed`
 
 ## Números re-derivados
 
@@ -80,12 +85,17 @@ Regras dummy de `pipeline/semantics.dummy` que mudaram da v0.1 para a v0.2 (SPEC
 | regra | v0.1 | v0.2 |
 |---|---|---|
 | 1, limiar | só a evidência sem patches | aplicada a todo subconjunto dos patches de `D` que editam `a.med` (vale para todas as regras) |
-| 2, `sel` | todo candidato relevante tem `rank` 1 na sua entidade | todo candidato relevante é o mantido por `top1` no seu **grupo de `Id`** (3.2 passo 3) |
+| 2, `sel` | todo candidato relevante tem `rank` 1 na sua entidade | todo candidato relevante é o mantido por `top1` no seu **grupo de `Id`** (3.2 passo 3) **e**, por código, os candidatos relevantes têm a mesma ordem relativa na emissão e na saída de `top1` |
 | 3, `occ` | códigos únicos e uma entidade por código | códigos únicos, `Id` únicos, e cada `Id` com uma **única** entidade |
 | 4, `map` | só `cm_gated` × `who_exact_fb` no espaço OMS | generalizada: para todo código, "passa no portão e projeta para a chave de `a`" igual nos dois níveis |
 | 0, triviais | – | nova: `f ∉ D`, `UNAVAILABLE`, patch que não edita `a.med` |
 | 5, `trait` | – | nova: enumeração dos subconjuntos do pool de entidades; mais de 10 entidades → `None` |
 
-Pela leitura do código, `semantics.dummy` já parece implementar essas regras. Pedido: um teste de solidez por
-propriedade (hypothesis) contra força bruta, com `Id` duplicado. `test_dummy_rules_are_sound_on_random_contrasts`
-serve de modelo.
+Pela leitura do código, `semantics.dummy` já implementa as regras 0, 1, 3, 4 e 5. Pedidos:
+1. **Defeito na regra 2** (`semantics.py:126-129`). Ela só testa a pertinência a `core._select(v, "top1")`. Falta a
+   condição de ordem. Em EX-30 ela certifica `sel`, mas `C61` vai de ausente a presente.
+2. **Docstring de `_select`** (`core.py:100`). Ela diz "in emission order", mas o código devolve os vencedores na
+   ordem da primeira aparição do grupo de `Id`. Pela decisão da GATE 2, o código é normativo e o SPEC o descreve (3.2
+   passo 3). Se α mudar o comportamento em vez da docstring, o SPEC acompanha.
+3. Um teste de solidez por propriedade (hypothesis) contra força bruta, com `Id` duplicado e códigos repetidos entre
+   grupos. `random_sel_contrast` e `test_dummy_rules_are_sound_on_random_contrasts` servem de modelo.

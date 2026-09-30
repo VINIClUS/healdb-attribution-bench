@@ -215,12 +215,14 @@ def collation_key(code: str) -> tuple[tuple[int, str], ...]:
 
 
 def select_top1(cands: Sequence[Cand]) -> list[Cand]:
-    """SPEC 3.2 step 3: per Id group, the last candidate of each code, then min (-cs, collation(code))."""
+    """SPEC 3.2 step 3: per Id group, the last candidate of each code, then min (-cs, collation(code)).
+
+    The winners come out in the order of first appearance of their Id group, not in emission order.
+    """
     groups: dict[int, dict[str, Cand]] = {}
     for c in cands:
         groups.setdefault(c.eid, {})[c.code] = c
-    kept = {id(min(g.values(), key=lambda c: (-c.cs, collation_key(c.code)))) for g in groups.values()}
-    return [c for c in cands if id(c) in kept]
+    return [min(g.values(), key=lambda c: (-c.cs, collation_key(c.code))) for g in groups.values()]
 
 
 def map_gate(level: str, code: str) -> bool:
@@ -490,8 +492,20 @@ def dummy_rule(c: Contrast, f: str, evidence: dict[str, Any]) -> bool | None:
         attr = "es" if f == "ent_thr" else "cs"
         return True if not any(lo <= getattr(k, attr) < hi for k in relevant) else None
     if f == "sel":  # rule 2
-        kept = {id(k) for k in select_top1(cands)}
-        return True if all(id(k) in kept for k in relevant) else None
+        top1 = select_top1(cands)
+        kept = {id(k) for k in top1}
+        if not all(id(k) in kept for k in relevant):
+            return None
+        rel = {id(k) for k in relevant}
+
+        def per_code(seq: Sequence[Cand]) -> dict[str, list[int]]:
+            out: dict[str, list[int]] = {}
+            for k in seq:
+                if id(k) in rel:
+                    out.setdefault(k.code, []).append(id(k))
+            return out
+
+        return True if per_code(cands) == per_code(top1) else None
     ents_per_id: dict[int, int] = {}
     for ent in evidence["entities"]:
         ents_per_id[ent["id"]] = ents_per_id.get(ent["id"], 0) + 1
@@ -993,15 +1007,16 @@ def test_dummy_certificates_and_truth(ex: dict[str, Any]) -> None:
     assert set(certified) <= set(truly), "a certificate must never be false"
 
 
-def random_contrast(rng: "random.Random") -> Contrast:
+def random_contrast(rng: "random.Random", force: str | None = None) -> Contrast:
+    """A random one-medication contrast; `force` makes that factor differ between x0 and x1."""
     ents = []
-    for _ in range(rng.randint(1, 4)):
+    for _ in range(rng.randint(1, 5)):
         traits = [[n, 0.9] for n in ("NEGATION", "DIAGNOSIS", "LOW_CONFIDENCE") if rng.random() < 0.3]
         if rng.random() < 0.4:
             traits.append(["HYPOTHETICAL", rng.choice([0.55, 0.62, 0.7])])
-        concepts = [[rng.choice(["C61", "E11.9", "E11.65", "R50.9"]), rng.choice([0.55, 0.6, 0.7, 0.9])]
+        concepts = [[rng.choice(["C61", "E11.9", "R50.9"]), rng.choice([0.55, 0.6, 0.7, 0.9, 0.95])]
                     for _ in range(rng.randint(0, 2))]
-        ents.append({"id": rng.choice([1, 2]), "type": rng.choice(["DX_NAME", "SIGN"]),
+        ents.append({"id": rng.choice([1, 2, 3]), "type": rng.choice(["DX_NAME", "SIGN"]),
                      "score": rng.choice([0.55, 0.6, 0.7, 0.9]), "traits": traits, "concepts": concepts})
     space = rng.choice(["CM", "WHO"])
     levels = {
@@ -1016,6 +1031,8 @@ def random_contrast(rng: "random.Random") -> Contrast:
     x1 = dict(x0)
     for f in rng.sample(CONFIG_FACTORS, rng.randint(1, 3)):
         x1[f] = rng.choice(levels[f])
+    if force is not None:
+        x1[force] = rng.choice([v for v in levels[force] if v != x0[force]])
     factors = [f for f in CONFIG_FACTORS if x0[f] != x1[f]]
     patches = {}
     if ents and rng.random() < 0.3:
@@ -1027,19 +1044,40 @@ def random_contrast(rng: "random.Random") -> Contrast:
     return make_contrast(evidence, x0, x1, space, query, factors, patches=patches)
 
 
+def random_sel_contrast(rng: "random.Random") -> Contrast:
+    """Duplicate Ids and repeated codes, where the top1 output order (Id-group first appearance) matters."""
+    ents = [
+        {"id": rng.choice([1, 2]), "type": "DX_NAME", "score": rng.choice([0.5, 0.9]),
+         "traits": [["DIAGNOSIS", 0.9]],
+         "concepts": [[rng.choice(["C61", "R50.9"]), rng.choice([0.5, 0.9, 0.95])] for _ in range(rng.randint(1, 2))]}
+        for _ in range(rng.randint(2, 4))
+    ]
+    occ = rng.choice(["last_upsert", "first_upsert", "per_entity_any"])
+    x0 = {"preset": "V1", "occ": occ, "sel": "all"}
+    x1 = {"preset": "V1", "occ": occ, "sel": "top1"}
+    evidence = {"model_version": "3.0.0.20231001", "entities": ents}
+    return make_contrast(evidence, x0, x1, "CM", rng.choice(["C61", "R50.9"]), ["sel"])
+
+
 def test_dummy_rules_are_sound_on_random_contrasts() -> None:
     """Brute force over random tiny responses with duplicate Ids: a reference certificate is never false."""
     import random
 
     rng = random.Random(20260930)
     certified = 0
+    for force in (None, *CONFIG_FACTORS):
+        for _ in range(600):
+            c = random_contrast(rng, force)
+            for f in c.factors:
+                if dummy_certificate(c, f) is True:
+                    certified += 1
+                    assert truly_dummy(c, f), (f, c)
     for _ in range(600):
-        c = random_contrast(rng)
-        for f in c.factors:
-            if dummy_certificate(c, f) is True:
-                certified += 1
-                assert truly_dummy(c, f), (f, c)
-    assert certified > 100
+        c = random_sel_contrast(rng)
+        if dummy_certificate(c, "sel") is True:
+            certified += 1
+            assert truly_dummy(c, "sel"), c
+    assert certified > 1000
 
 
 @for_kind("bfs")

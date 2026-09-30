@@ -245,6 +245,28 @@
       "expected": {"certified": [], "truly_dummy": []}
     },
     {
+      "id": "EX-29",
+      "kind": "run",
+      "evidence": {"model_version": "3.0.0.20231001", "entities": [{"id": 2, "type": "DX_NAME", "score": 0.9, "traits": [["DIAGNOSIS", 0.9]], "concepts": [["R50.9", 0.5]]}, {"id": 1, "type": "DX_NAME", "score": 0.9, "traits": [["DIAGNOSIS", 0.9]], "concepts": [["C61", 0.9]]}, {"id": 2, "type": "DX_NAME", "score": 0.5, "traits": [["DIAGNOSIS", 0.9]], "concepts": [["C61", 0.95]]}]},
+      "cases": [
+        {"config": {"preset": "V1"}, "space": "CM", "expected_present": []},
+        {"config": {"preset": "V1", "occ": "first_upsert"}, "space": "CM", "expected_present": ["C61"]},
+        {"config": {"preset": "V1", "sel": "top1"}, "space": "CM", "expected_present": ["C61"]},
+        {"config": {"preset": "V1", "sel": "top1", "occ": "first_upsert"}, "space": "CM", "expected_present": []}
+      ]
+    },
+    {
+      "id": "EX-30",
+      "kind": "dummy",
+      "evidence": {"model_version": "3.0.0.20231001", "entities": [{"id": 2, "type": "DX_NAME", "score": 0.9, "traits": [["DIAGNOSIS", 0.9]], "concepts": [["R50.9", 0.5]]}, {"id": 1, "type": "DX_NAME", "score": 0.9, "traits": [["DIAGNOSIS", 0.9]], "concepts": [["C61", 0.9]]}, {"id": 2, "type": "DX_NAME", "score": 0.5, "traits": [["DIAGNOSIS", 0.9]], "concepts": [["C61", 0.95]]}]},
+      "x0": {"preset": "V1", "sel": "all"},
+      "x1": {"preset": "V1", "sel": "top1"},
+      "factors": ["sel"],
+      "space": "CM",
+      "query": "C61",
+      "expected": {"certified": [], "truly_dummy": []}
+    },
+    {
       "id": "EX-26",
       "kind": "dummy",
       "evidence": {"model_version": "3.0.0.20231001", "entities": [{"id": 1, "type": "DX_NAME", "score": 0.9, "traits": [["DIAGNOSIS", 0.9]], "concepts": [["C61", 0.9]]}, {"id": 1, "type": "DX_NAME", "score": 0.9, "traits": [["DIAGNOSIS", 0.9]], "concepts": [["E11.9", 0.95]]}]},
