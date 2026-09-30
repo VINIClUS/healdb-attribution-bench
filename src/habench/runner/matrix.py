@@ -18,12 +18,13 @@ PRIMARY_BUDGET = 16  # H1a (SPEC 7.4, D7.9)
 METHODS = {
     "b0": "habench.methods.b0:B0",
     "b1": "habench.methods.b1:B1",
+    "b2": "habench.methods.b2:B2",
     "b3": "habench.methods.b3:B3",
     "bugdoc": "habench.methods.bugdoc_adapter:BugDocMethod",
     "m": "habench.methods.m:M",
     "m_lenient": "habench.methods.m:MLenient",  # the rigor sweep, cal only (SPEC 13.5)
 }
-DEFAULT_METHODS = ("b0", "b1", "b3", "bugdoc", "m")
+DEFAULT_METHODS = ("b0", "b1", "b2", "b3", "bugdoc", "m")
 INFO_VIEWS = (
     "L1", "L2-R", "L2-M", "N1", "N2",
     "L2-R-A1", "L2-R-A2", "L2-R-A3", "L2-R-A4", "L2-R-A5",
