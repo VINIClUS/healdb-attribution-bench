@@ -32,7 +32,12 @@ O esperado total fica abaixo de US$15, dentro do critério de seguir (≤ ~US$25
 | `smoke-dry` | 2026-09-30 | `smoke.json` | simulação: 100 chamadas planejadas, nada gravado | — |
 | `smoke-01` | 2026-09-30 17:37–17:38 UTC | `smoke.json` | 100/100 falhas `SubscriptionRequiredException` ("The AWS Access Key Id needs a subscription for the service") | US$0,4875 (pior caso das falhas) |
 | `canary-bedrock-01` | 2026-09-30 17:39 UTC | `canary_bedrock.json` | 3/3 falhas `AccessDeniedException` ("Your account is currently being verified…") | US$0,0050 (pior caso das falhas) |
+| `probe-01` | 2026-09-30 18:10 UTC | `probe.json` | ACM: `SubscriptionRequiredException` de novo. Bedrock (Nova Lite): `ThrottlingException` "Too many tokens per day, please wait before trying again." já na primeira chamada do dia, com 3 tentativas pela política de retentativa | US$0,0040 (pior caso das falhas) |
 
-**Total do ledger:** US$0,4925, todo de falhas conciliadas pelo pior caso (D5). O serviço recusou as requisições antes de processá-las.
+**Total do ledger:** US$0,4965, todo de falhas conciliadas pelo pior caso (D5). O serviço recusou as requisições antes de processá-las.
 
-**Situação:** a campanha está bloqueada pela verificação da conta (D6). A mensagem da AWS diz que a verificação costuma levar menos de 2 horas.
+**Situação:** a campanha continua bloqueada (D6), por dois motivos.
+- O Comprehend Medical exige assinatura ou ativação da conta.
+- O Bedrock recusa por cota diária de tokens, já na primeira chamada. É um sintoma típico de cota zero ou mínima em conta nova.
+
+Os dois problemas pedem ação do titular da conta: concluir a verificação, ativar o serviço ou pedir aumento de cota. A sessão principal não altera configurações da conta.
