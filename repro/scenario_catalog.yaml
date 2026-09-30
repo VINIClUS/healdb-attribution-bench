@@ -1,0 +1,119 @@
+# Catálogo de cenários (SPEC §12; protocolo §8). Lido por habench.scenarios.config: os valores daqui são os
+# usados pelo gerador. Só dev/cal: a partição de teste é selada (SealedError) e seus níveis ficam no pacote de
+# verdade (<HAB_DATA_DIR>/truth/sealed/test_levels.json), nunca neste arquivo.
+# O valor da semente é escolhido pelo runner; aqui só se descreve o seu papel.
+
+version: 1
+
+seeds:
+  role: >-
+    Uma semente por execução do gerador. Dela derivam, por hash estável (sha256, nunca hash() do Python), o
+    sorteio de consultas (semente, cid), a ordem dos candidatos de cada família e a amostragem com rejeição de X(ii).
+    Os ids (cid, qid, id de patch) são hashes opacos e nunca contêm família, subfamília nem a semente.
+
+sampling:
+  max_changed: 25      # consultas alteradas por contraste
+  max_unchanged: 25    # consultas inalteradas por contraste
+  ratio_changed_to_unchanged: "1:1"   # inalteradas = min(#inalteradas, max(#alteradas sorteadas, 1)); N só tem inalteradas
+  inclusion_probability: "k/n por estrato (alteradas, inalteradas)"
+  candidate_keys: >-
+    chaves obtidas projetando cada candidato da evidência sob os níveis de map de x0 e x1 (só os que passam no
+    portão de algum dos dois níveis). Inclui presente/presente e ausente/ausente.
+
+levels:   # dev/cal (SPEC 4.1)
+  ent_thr: [0.55, 0.60, 0.65, 0.70]
+  icd_thr: [0.30, 0.55, 0.60, 0.65]
+  occ: [last_upsert, first_upsert, per_entity_any]
+  sel: [all, top1]
+  trait: [v1, v1_hyp_le_0.6, v1_no_required, v2, neg_only]
+  map: [cm_gated, cm_ungated, who_exact, who_exact_fb, who_cat3]
+  base: V1   # x0 dos contrastes de F, M, O e I é o preset V1
+
+families:
+  N:
+    targets_per_group: 3
+    # (a) D = vazio; (b) só fatores certificados dummy. (c) e (d) não se expressam como contraste de evidência única.
+    subfamilies: [a_empty_D, b_map, b_threshold_band, b_map_threshold]
+    map_dummy: [cm_gated, who_exact_fb]       # espaço OMS: fator sem efeito (SPEC 1.3)
+    threshold_factors: [ent_thr, icd_thr]
+    catalogued_only:
+      c_real_repetition: "medicamentos com o mesmo texto enviado: exige dois medicamentos com evidência distinta; fora do contraste de evidência única"
+      d_stochastic: "só simulador, reportado à parte"
+    null_kind: >-
+      Todo contraste N gerado aqui é um nulo LOCAL (evidência armazenada, núcleo determinístico). O nulo
+      prospectivo (repetição real, simulador) é catalogado em c e d e não é gerado.
+    expected: "tudo ausencia_de_mudanca, confirmado pelo oráculo consulta a consulta; consulta alterada descarta o contraste e conta como erro de geração (SPEC 10.2)"
+
+  F:
+    targets_per_group: 7
+    border_max: 2            # contrastes com patch de borda entre os 7
+    x0: V1
+    changes:                 # um fator por contraste
+      ent_thr: [0.55, 0.65, 0.70]
+      icd_thr: [0.30, 0.55, 0.65]
+      trait: [v1_hyp_le_0.6, v1_no_required, v2, neg_only]
+    border:                  # patch leva um score exatamente a t1 e a t1 - epsilon
+      factors: [ent_thr, icd_thr]
+      epsilon: 1.0e-9
+
+  M:
+    targets_per_group: 5
+    pairs:                   # [map em x0, map em x1], espaço OMS
+      - [cm_gated, who_exact_fb]
+      - [cm_gated, who_exact]
+      - [cm_gated, who_cat3]
+      - [who_exact_fb, who_exact]
+      - [who_exact, who_exact_fb]
+      - [who_exact_fb, who_cat3]
+      - [who_cat3, who_exact_fb]
+    extend: true             # bundle EXTEND (cm_gated -> cm_ungated), espaço CM
+    granularity_note: "mudança de granularidade sinalizada nas notas (relação ancestral válida, SPEC 2.1); unmapped é preservado pelo núcleo"
+
+  O:
+    targets_per_group: 5
+    min_multiplicity: 1      # candidatos repetidos (código ou Id) mínimos no grupo; abaixo disso O é pulada
+    changes:
+      - {occ: per_entity_any}
+      - {occ: first_upsert}
+      - {sel: top1}
+      - {occ: per_entity_any, sel: top1}
+    swap_patch: true         # patch opcional que troca duas entidades com código em comum
+
+  X:
+    targets_per_group: 6     # = i + ii + iii
+    i_bundle: 1              # V1_TO_V2 como bundle (D = {V1_TO_V2})
+    i_components: 1          # V1_TO_V2 como os 6 fatores
+    ii: 3                    # amostragem com rejeição guiada pelo oráculo
+    iii: 1                   # exemplo de §7.2 (forma EX-07), semissintético, só dev/cal
+    i_note: "nos grupos de teste o bundle real fica fora do conjunto confirmatório (D2)"
+    k: [3, 4, 5, 6]          # fatores por contraste de X(ii), incluindo patches
+    max_attempts: 30         # tentativas por grupo; ao esgotar, registra cota não atendida
+    patch_value_margin: 0.02 # patch de cancelamento leva o score a t1 + margem
+    dummy_map_probability: 0.6   # chance de incluir map cm_gated -> who_exact_fb (sem efeito em OMS)
+    acceptance:
+      verified_no_effect: ">= 1 fator que é dummy verdadeiro na tabela-verdade de toda consulta alterada sorteada"
+      opposing_pair: ">= 1 par (f, g) e consulta sorteada com estado({f}) != estado(vazio) e estado({f, g}) == estado(vazio): g desfaz o efeito de f"
+    shape_quota:             # mínimos de consultas alteradas por forma, acumulados entre os contrastes X(ii) da partição
+      unitary: 30            # família com um único conjunto unitário
+      several: 15            # mais de um conjunto (vias alternativas)
+      interaction: 15        # algum conjunto de tamanho >= 2
+      nonmonotone: 10        # S suficiente e T maior admissível não suficiente
+    quota_rule: "aceita contraste que contribui com uma forma de cota aberta; com todas as cotas fechadas, aceita qualquer um que cumpra as regras"
+
+  I:
+    crossing: "(a) os contrastes de F/M/O/X são cruzados com vistas e capacidades pelo runner; nada a gerar aqui"
+    declared_per_group: 3    # (b) divergência declarado != executado; um por tipo, sobre contrastes de tipo F
+    declared_kinds: [trait, map, occ]
+    alt_per_group: 4         # (c) execuções que realizam a variante alt (SPEC 4.3)
+    alt_kinds: [threshold, trait, occ, map]
+
+  P:
+    status: catalogued_only
+    generated: false
+    factors: [dup_ind, mask_drug, wow_rewrite, cut10k]
+    reference: contrafactual_indisponivel
+    note: "referência contrafactual_indisponivel; fora dos denominadores"
+    e14_real_divergence: >-
+      E14 (docs/analise/00_analise_protocolo.md): o SQL commitado da V2 difere do executado (bug do backspace;
+      F1 §4.6). É uma divergência declarado × executado real, mas no estágio de preparação; fica em P
+      (catalogada) e em Q1, não no núcleo local.

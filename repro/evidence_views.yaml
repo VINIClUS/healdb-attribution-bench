@@ -1,0 +1,44 @@
+# Perfis de evidência, ablações e perdas combinadas (SPEC 7.1 e 7.2).
+# Fonte executável: src/habench/views/profiles.py (este arquivo é a declaração legível; o teste
+# tests/test_views_profiles.py confere os dois contra o EX-22).
+
+artefatos:
+  source_pt: {escopo: independente da execução, conteudo: "texto PT da fonte, por medicação"}
+  final: {escopo: por execução, conteudo: "mapa de presença (PresenceMap) da execução"}
+  hashes: {escopo: por execução, conteudo: "SHA-256 de submitted_text, translation_en, acm_response e final da execução (mesmo oculto na vista)"}
+  config_declared: {escopo: por execução, conteudo: "níveis declarados (d0/d1), nunca patches"}
+  translation_en: {escopo: por execução, conteudo: "tradução EN por medicação"}
+  submitted_text: {escopo: por execução, conteudo: "texto enviado ao ACM"}
+  acm_response: {escopo: por execução, conteudo: "resposta bruta por medicação; x1 traz os patches aplicados"}
+  acm_response_top1: {escopo: por execução, conteudo: "como acm_response, só o primeiro conceito por entidade (A2)"}
+  code_link: {escopo: por execução, conteudo: "níveis executados (nunca variantes)"}
+  env_versions: {escopo: independente da execução, conteudo: "versão da terminologia, Python, numpy"}
+  ops_actions: {escopo: independente da execução, conteudo: "lista vazia: o núcleo determinístico não tem ações operacionais"}
+  trace: {escopo: por execução, conteudo: "candidatos, registros e decisões (L2-M); tabelas históricas parciais em N1/N2"}
+  trace_winners: {escopo: por execução, conteudo: "registros aprovados com candidato-fonte e decisões (A6)"}
+
+perfis:
+  L1: [source_pt, final, hashes, config_declared]
+  L2-R: [source_pt, final, hashes, config_declared, translation_en, submitted_text, acm_response, code_link, env_versions, ops_actions]
+  L2-M: [source_pt, final, hashes, config_declared, translation_en, submitted_text, acm_response, code_link, env_versions, ops_actions, trace]
+  # No núcleo determinístico as referências repetem x0: L3-R = L2-R e L3-M = L2-M em artefatos.
+  L3-R: {igual_a: L2-R}
+  L3-M: {igual_a: L2-M}
+  N1: # esquema md V1, constantes de 405a10c; trace parcial {entity, trait}
+    [source_pt, final, config_declared, translation_en, acm_response, trace]
+  N2: # esquema md V2, parâmetros de HEAD; trace parcial {entity_icd, entity_trait, cutoff_audit}
+    [source_pt, final, config_declared, translation_en, submitted_text, acm_response, trace]
+
+ablacoes:  # sobre L2-R e L2-M (A6 só sobre L2-M/L3-M)
+  A1: {remove: submitted_text}
+  A2: {remove: acm_response, adiciona: acm_response_top1}
+  A3: {remove: code_link}
+  A4: {remove: env_versions}
+  A5: {remove: ops_actions}
+  A6: {remove: trace, adiciona: trace_winners}
+
+perdas_combinadas:  # propostas; congeladas antes do teste
+  C1: [A1, A3]   # propostas; congeladas antes do teste
+  C2: [A2, A6]   # propostas; congeladas antes do teste
+  C3: [A3, A4, A5]   # propostas; congeladas antes do teste
+  C4: [A1, A2, A3]   # propostas; congeladas antes do teste
