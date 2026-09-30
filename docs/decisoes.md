@@ -72,3 +72,15 @@ O SPEC é aprovado **na condição de v0.2**: o lead β aplica as correções ab
 - **α dos limites de evento zero (A08).** α = 0,025 unilateral, coerente com as inferências primárias. O dimensionamento usa o nível do pior caso de Holm, e `p_H2 = max(p_i, p_ii)`.
 - **`top1` dentro de um grupo de `Id` (A02).** O normativo é o comportamento de `pipeline/core.py`, que reproduz as tabelas V2 com 0 diferenças. O SPEC o descreve citando o código. Onde os dados V2 não fixam o caso (empates), vale o comportamento do núcleo. O lead α adapta `pipeline/semantics.dummy` às regras corrigidas, com um teste de solidez por propriedade.
 - **Exemplo público de §7.2 (X(iii), A12).** Fica restrito a dev/cal e nunca entra em teste.
+
+## 2026-09-30 — GATE 2: SPEC v0.2 aprovado (sessão principal)
+
+A sessão principal reconferiu as seções alteradas:
+- a seção 16 (changelog);
+- 8.3, com a partição dos estados provada e EX-24;
+- 9.2, com o passo 0, a tabela de aceitação e EX-21 (e)–(h);
+- 6.3, com a completude da BFS; EX-28 foi recalculado à mão.
+
+A suíte está verde no commit `188123a` do lead β: `tests/test_spec_examples.py` com 86 testes e o total com 512.
+
+O SPEC v0.2 é o documento normativo da onda 2 (β3 e γ). Correções posteriores entram como v0.2.x, com changelog, e só por decisão registrada aqui.
