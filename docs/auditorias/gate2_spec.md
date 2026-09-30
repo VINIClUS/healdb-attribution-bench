@@ -10,9 +10,11 @@
 ## 0. O que foi executado
 
 - `uv run pytest tests/test_spec_examples.py -q` → `62 passed`.
-- **Recomputação à mão:** EX-01, EX-04 a EX-10, EX-11 (as seis linhas de `W`), EX-12 a EX-21 e as linhas EX-S01 a
-  EX-S35 da tabela 9.3. Todos os valores publicados conferem. EX-02, EX-03, EX-22 e EX-23 foram conferidos só pelo
-  teste.
+- **Recomputação à mão:**
+  - EX-01, EX-04 a EX-10, EX-11 (as seis linhas de `W`), EX-12 a EX-21, e EX-17 a partir das 11 consultas do JSON.
+  - Da tabela 9.3, EX-S04, S12, S15, S16 e S18, as linhas de `alternativas`, que têm as regras mais delicadas.
+  - Todos os valores recomputados conferem.
+- **Conferidos só pelo teste:** EX-02, EX-03, EX-22, EX-23 e as demais linhas EX-S.
 - **Sonda descartável** (`/tmp`, fora do repositório), que importa as funções de referência do teste:
   - BFS de 6.3 sem orçamento, com conjuntos inadmissíveis aleatórios, contra a família mínima ingênua. Foram 20.000
     tabelas-verdade aleatórias, 12.393 delas não monótonas: **0 divergências**.
@@ -30,8 +32,9 @@ do congelamento P4) e **menor**.
   - `W_hi` é calculado só sobre as classes de U. A história verdadeira `h*` só está em U se:
     - os candidatos de `a` cabem num bundle de até `L = 4` símbolos;
     - a fusão de símbolos preserva o comportamento do grupo real.
-  - O desenho (§C, família O) registra até 48 ocorrências por par. Então `F* ∈ W_hi` não vale "por construção", ao
-    contrário do que dizem 8.1 e 8.3.
+  - Basta que `a` tenha 5 candidatos para que `h* ∉ U`. O desenho (§C, família O) cita até 48 ocorrências por par,
+    mas é número de rascunho (D3), não re-derivado. Então `F* ∈ W_hi` não vale "por construção", ao contrário do que
+    dizem 8.1 e 8.3.
   - Ao mesmo tempo, 8.3 afirma que `F*` está sempre em `W_lo`. O caso `W_lo = {F*}` e `W_hi = {F′}` com `F′ ≠ F*`
     (ou `W_hi = ∅`) viola `W_lo ⊆ W_hi`. Com U saturado, esse caso não é `identificado`, nem `ambiguo`, nem
     `indeterminado`.
@@ -232,8 +235,9 @@ do congelamento P4) e **menor**.
     todas regras de evidência.
 - **Correção.**
   - Acrescentar à BFS a verificação de completude de 6.1 sobre os inadmissíveis pulados.
-  - Definir a necessidade como `+∞` quando a capacidade não executa `D` (e então `orcamento_esgotado` é
-    desnecessário), ou excluir essas células.
+  - Quando a capacidade não executa `D` (R-C) ou não há `eval`, `orcamento_esgotado` é sempre desnecessário. A
+    forma equivalente é definir a necessidade como 0 nessas células. **Não** usar `+∞`: pela regra de 9.3, isso
+    tornaria a abstenção apropriada.
   - Tirar "trace" da frase, ou definir regras dummy por traço.
 
 ### A14 — importante — §9.3: certificado falso fora da célula `identificado`
@@ -325,8 +329,9 @@ seria válida, mas exige desvio registrado. Basta o registro (A16).
 - **Exemplos.**
   - Em EX-05, "–" na coluna de traços quer dizer "DIAGNOSIS 0,90 padrão". Deixar isso explícito.
   - A tabela 9.3 não tem exemplo para (`ambiguo` × `orcamento_esgotado`, `contrafactual_indisponivel`, `falha`),
-    (`incompleta` × `compativel_com_variabilidade`, `orcamento_esgotado`, `falha`) nem (`inalterado` ×
-    `orcamento_esgotado`, `contrafactual_indisponivel`, `falha`). O brief pede um por célula × estado.
+    (`incompleta` × `compativel_com_variabilidade`, `orcamento_esgotado`, `falha`), (`inalterado` ×
+    `orcamento_esgotado`, `contrafactual_indisponivel`, `falha`), nem para os sete estados de `indeterminado` além de
+    V (EX-S21). O brief pede um por célula × estado.
 - **Pontuação.** `contrafactual_indisponivel` sob R-C em `ambiguo` é "desnecessária". O SPEC deve dizer ao método
   que R-C pede `informacao_insuficiente` ou `alternativas`.
 - **Definições que faltam.**
