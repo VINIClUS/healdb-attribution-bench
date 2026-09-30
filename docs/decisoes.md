@@ -85,3 +85,15 @@ A suíte está verde no commit `188123a` do lead β: `tests/test_spec_examples.p
 
 O SPEC v0.2 é o documento normativo da onda 2 (β3 e γ). Correções posteriores entram como v0.2.x, com changelog, e só por decisão registrada aqui.
 - **Adendo.** O commit `0c90992` do lead β (EX-29, a ordem de saída de `top1`; EX-30, a condição de ordem da regra dummy 2) chegou depois da reconferência. Foi revisado e EX-29 recalculado à mão. A mudança só torna a regra 2 mais conservadora. Fica incluído na v0.2 aprovada (merge `d8bb90f`).
+
+## 2026-09-30 — SPEC v0.2.1 autorizado (sessão principal)
+
+O lead α validou as regras dummy com testes por propriedade e achou um contraexemplo para a regra 3 (`occ`): um nome de traço repetido na mesma entidade, com scores diferentes. `pipeline/semantics.dummy` já foi corrigido (merge `4eeb200`).
+
+O lead β aplica ao SPEC, como v0.2.1 com changelog, os itens 1 a 4 do "REQUEST (lead β)" de `docs/status/lead-alpha.md`:
+1. a condição extra da regra 3;
+2. "primeiro candidato do grupo de `Id`" no passo 3 de §3.2;
+3. o score de um traço repetido na mesma entidade em §3.2;
+4. a remoção da nota obsoleta.
+
+Nenhuma dessas mudanças altera o núcleo nem os resultados já verificados. O item 5 fica a critério do lead β.
