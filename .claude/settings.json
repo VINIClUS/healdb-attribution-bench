@@ -1,0 +1,25 @@
+{
+  "env": {
+    "AWS_SHARED_CREDENTIALS_FILE": "/dev/null",
+    "AWS_CONFIG_FILE": "/dev/null",
+    "AWS_EC2_METADATA_DISABLED": "true",
+    "HAB_DUMPS_DIR": "/home/vinicius/healdb-reconstrucao/x",
+    "HAB_WORKSPACE": "/home/vinicius/healdb-reconstrucao",
+    "HAB_DATA_DIR": "/home/vinicius/hab-data"
+  },
+  "permissions": {
+    "deny": [
+      "Bash(aws:*)",
+      "Bash(rtk aws:*)",
+      "Bash(rtk proxy aws:*)",
+      "Bash(git push:*)",
+      "Bash(rtk git push:*)",
+      "Bash(git remote add:*)",
+      "mcp__claude_ai_AWS_MCP",
+      "Read(~/.aws/**)",
+      "Read(~/healdb-reconstrucao/src/prehist_git/**)",
+      "Read(~/healdb-reconstrucao/out/prehist_nested.txt)",
+      "Read(~/healdb-reconstrucao/scripts/prehist_nested.sh)"
+    ]
+  }
+}

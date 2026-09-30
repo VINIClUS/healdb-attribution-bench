@@ -1,0 +1,41 @@
+[project]
+name = "habench"
+version = "0.1.0"
+description = "HealDB attribution benchmark: per-association change attribution under partial provenance (protocol v0.2)"
+authors = [
+    { name = "VINIClUS", email = "vinicius0zero0@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.1",
+    "pyarrow>=17",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+campaign = ["boto3>=1.35"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "hypothesis>=6.100",
+    "scipy>=1.14",
+    "boto3>=1.35",
+]
+
+[project.scripts]
+habench = "habench:main"
+
+[build-system]
+requires = ["uv_build>=0.12.4,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-m 'not docker and not paid'"
+markers = [
+    "dumps: needs the extracted HealDB dumps (HAB_DUMPS_DIR) or snapshots (HAB_DATA_DIR)",
+    "docker: needs Docker and the throwaway MySQL replay container",
+    "slow: long-running",
+    "paid: makes paid external API calls; never run by tests",
+]
