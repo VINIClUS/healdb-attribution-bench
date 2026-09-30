@@ -1,8 +1,8 @@
 """Worked examples of docs/SPEC.md, checked by a self-contained brute-force reference.
 
-The reference below does not import ``habench`` (only the vocabulary test does). Every expected answer is computed
-from the example inputs in ``tests/data/spec_examples.json`` following the SPEC semantics; the JSON expectations are
-only compared against, never copied into the code.
+The reference below does not import ``habench`` (only the two vocabulary tests import ``habench.types``). Every
+expected answer is computed from the example inputs in ``tests/data/spec_examples.json`` following the SPEC semantics;
+the JSON expectations are only compared against, never copied into the code.
 """
 
 import copy
@@ -208,31 +208,54 @@ def trait_passes(level: str, variant: str, rtype: str, traits: dict[str, float])
     return bool(DXS & traits.keys()) or (hyp is not None and hyp <= 0.60)
 
 
+def collation_key(code: str) -> tuple[tuple[int, str], ...]:
+    """MySQL utf8mb4_0900_ai_ci order on ICD codes: '_' < '.' < digits < letters (case-insensitive)."""
+    order = {"_": (0, "0"), ".": (0, "1")}
+    return tuple(order.get(ch) or ((1, ch) if ch.isdigit() else (2, ch.upper())) for ch in code)
+
+
+def select_top1(cands: Sequence[Cand]) -> list[Cand]:
+    """SPEC 3.2 step 3: per Id group, the last candidate of each code, then min (-cs, collation(code)).
+
+    The winners come out in the order of first appearance of their Id group, not in emission order.
+    """
+    groups: dict[int, dict[str, Cand]] = {}
+    for c in cands:
+        groups.setdefault(c.eid, {})[c.code] = c
+    return [min(g.values(), key=lambda c: (-c.cs, collation_key(c.code))) for g in groups.values()]
+
+
+def map_gate(level: str, code: str) -> bool:
+    """SPEC 1.2: the V1 gate for cm_gated, none for cm_ungated, the level's own projection for who_*."""
+    if level == "cm_ungated":
+        return True
+    return project(level, code) is not None
+
+
 def build_records(evidence: dict[str, Any], cfg: dict[str, Any], var: dict[str, str], space: str) -> list[Rec]:
     cands = candidates(evidence)
     occ = cfg["occ"]
     if cfg["sel"] == "top1":
-        # per_entity_any: the "entity" is the group of entities with the same Id (SPEC 3.2 step 3).
-        group = (lambda c: c.eid) if occ == "per_entity_any" else (lambda c: c.ent_index)
-        best: dict[int, Cand] = {}
-        for c in cands:
-            g = group(c)
-            if g not in best or (-c.cs, c.code) < (-best[g].cs, best[g].code):
-                best[g] = c
-        cands = [c for c in cands if best[group(c)] is c]
+        cands = select_top1(cands)
     if occ == "last_upsert" and var["occ"] == "alt":
         occ = "first_upsert"
     keyf = (lambda c: c.code) if occ != "per_entity_any" else (lambda c: (c.eid, c.code))
     groups: dict[Any, list[Cand]] = {}
     for c in cands:
         groups.setdefault(keyf(c), []).append(c)
+    id_traits: dict[int, dict[str, float]] = {}
+    for ent in evidence["entities"]:  # per_entity_any: every entity of the Id group, last score wins
+        id_traits.setdefault(ent["id"], {}).update(dict(ent["traits"]))
     recs: list[Rec] = []
     for members in groups.values():
         first = occ == "first_upsert"
         pick = members[0] if first else members[-1]
         traits: dict[str, float] = {}
-        for c in (reversed(members) if first else members):
-            traits.update(dict(c.traits))
+        if occ == "per_entity_any":
+            traits = dict(id_traits[pick.eid])
+        else:
+            for c in (reversed(members) if first else members):
+                traits.update(dict(c.traits))
         failed: set[str] = set()
         if not trait_passes(cfg["trait"], var["trait"], pick.type, traits):
             failed.add("trait")
@@ -242,10 +265,11 @@ def build_records(evidence: dict[str, Any], cfg: dict[str, Any], var: dict[str, 
             failed.add("ent_thr")
         if not icd_ok:
             failed.add("icd_thr")
-        key = space_key(cfg["map"], pick.code, space, ungated=(cfg["map"] == "cm_gated" and var["map"] == "alt"))
-        if key is None:
+        ungated = cfg["map"] == "cm_gated" and var["map"] == "alt"
+        if not map_gate("cm_ungated" if ungated else cfg["map"], pick.code):
             failed.add("map")
-        recs.append(Rec(pick.code, key, frozenset(failed)))
+        key = space_key(cfg["map"], pick.code, space, ungated=ungated)
+        recs.append(Rec(pick.code, key, frozenset(failed)))  # passed with key None = unmapped
     return recs
 
 
@@ -393,6 +417,7 @@ def reference_bfs(
     full = frozenset(names)
     evaluated: list[frozenset[str]] = []
     found: list[frozenset[str]] = []
+    skipped_inadmissible: list[frozenset[str]] = []
     exhausted = False
 
     def spend(S: frozenset[str]) -> bool | None:
@@ -406,7 +431,10 @@ def reference_bfs(
     for k in range(1, len(names)):
         for combo in itertools.combinations(names, k):
             S = frozenset(combo)
-            if any(T <= S for T in found) or (S & dummy) or not is_admissible_fn(S):
+            if any(T <= S for T in found) or (S & dummy):
+                continue
+            if not is_admissible_fn(S):
+                skipped_inadmissible.append(S)
                 continue
             verdict = spend(S)
             if verdict is None:
@@ -419,40 +447,97 @@ def reference_bfs(
     family = set(found)
     if not exhausted and not any(T <= full for T in found):
         family.add(full)
-    return evaluated, frozenset(family), not exhausted
+    # SPEC 6.3 step 4 (A13): every skipped inadmissible set must strictly contain a found sufficient set.
+    complete = not exhausted and all(any(T < S for T in found) for S in skipped_inadmissible)
+    return evaluated, frozenset(family), complete
 
 
 # SPEC 4.6 dummy certificates -----------------------------------------------------------------------------------
 
 
+MAX_TRAIT_ENTITIES = 10
+
+
 def dummy_certificate(c: Contrast, f: str) -> bool | None:
-    """Reference rules 1-4; None when undecided."""
-    if any(p in c.factors for p in c.patches) or f not in CONFIG_FACTORS or f in c.bundles:
-        return None
-    maps = {c.x0["map"], c.x1["map"]}
-    cands = [
-        cand
-        for cand in candidates(c.evidence or {"entities": []})
-        if any(space_key(m, cand.code, c.space) == c.query for m in maps)
-    ]
-    if f in ("ent_thr", "icd_thr"):
-        if c.var0[f] != "std" or c.var1[f] != "std":
+    """SPEC 4.6 reference rules 0-5: True (irrelevant) or None (undecided), never False."""
+    if f not in c.factors or c.evidence is None:
+        return True  # rule 0
+    if f not in CONFIG_FACTORS or f in c.bundles:
+        return None  # patches, prep and bundles
+    patches_in_d = [p for p in c.factors if p in c.patches]  # every toy patch edits the single medication
+    for combo in all_subsets(patches_in_d):
+        ops = [op for p in sorted(combo) for op in c.patches[p]]
+        if dummy_rule(c, f, apply_patches(c.evidence, ops)) is not True:
             return None
-        lo, hi = sorted((c.x0[f], c.x1[f]))
+    return True
+
+
+def dummy_rule(c: Contrast, f: str, evidence: dict[str, Any]) -> bool | None:
+    x0, x1, v0, v1 = c.x0, c.x1, c.var0, c.var1
+
+    def maps_to_query(level: str, var: str, code: str) -> bool:
+        ungated = level == "cm_gated" and var == "alt"
+        gate_ok = map_gate("cm_ungated" if ungated else level, code)
+        return gate_ok and space_key(level, code, c.space, ungated=ungated) == c.query
+
+    cands = candidates(evidence)
+    relevant = [
+        k for k in cands
+        if maps_to_query(x0["map"], v0["map"], k.code) or maps_to_query(x1["map"], v1["map"], k.code)
+    ]
+    if f in ("ent_thr", "icd_thr"):  # rule 1
+        if v0[f] != "std" or v1[f] != "std":
+            return None
+        lo, hi = sorted((x0[f], x1[f]))
         attr = "es" if f == "ent_thr" else "cs"
-        return True if not any(lo <= getattr(cand, attr) < hi for cand in cands) else None
-    if f == "sel":
-        return True if all(cand.rank == 1 for cand in cands) else None
-    if f == "occ":
-        by_code: dict[str, set[int]] = {}
-        counts: dict[str, int] = {}
-        for cand in cands:
-            by_code.setdefault(cand.code, set()).add(cand.eid)
-            counts[cand.code] = counts.get(cand.code, 0) + 1
-        return True if all(n == 1 and len(by_code[k]) == 1 for k, n in counts.items()) else None
-    if f == "map":
-        both = {c.x0["map"], c.x1["map"]}
-        return True if (both == {"cm_gated", "who_exact_fb"} and c.space == "WHO") else None
+        return True if not any(lo <= getattr(k, attr) < hi for k in relevant) else None
+    if f == "sel":  # rule 2
+        top1 = select_top1(cands)
+        kept = {id(k) for k in top1}
+        if not all(id(k) in kept for k in relevant):
+            return None
+        rel = {id(k) for k in relevant}
+
+        def per_code(seq: Sequence[Cand]) -> dict[str, list[int]]:
+            out: dict[str, list[int]] = {}
+            for k in seq:
+                if id(k) in rel:
+                    out.setdefault(k.code, []).append(id(k))
+            return out
+
+        return True if per_code(cands) == per_code(top1) else None
+    ents_per_id: dict[int, int] = {}
+    for ent in evidence["entities"]:
+        ents_per_id[ent["id"]] = ents_per_id.get(ent["id"], 0) + 1
+    if f == "occ":  # rule 3
+        codes = [k.code for k in relevant]
+        ids = [k.eid for k in relevant]
+        unique = len(set(codes)) == len(codes) and len(set(ids)) == len(ids)
+        return True if unique and all(ents_per_id[i] == 1 for i in ids) else None
+    if f == "map":  # rule 4
+        codes = {k.code for k in cands}
+        same = all(maps_to_query(x0["map"], v0["map"], k) == maps_to_query(x1["map"], v1["map"], k) for k in codes)
+        return True if same else None
+    if f == "trait":  # rule 5
+        pool_ids = {k.eid for k in relevant}
+        pool = [ent for ent in evidence["entities"] if ent["id"] in pool_ids]
+        if len(pool) > MAX_TRAIT_ENTITIES:
+            return None
+        types = {k.type for k in relevant}
+        for sub in all_subsets(range(len(pool))):
+            if not sub:
+                continue
+            names = {n for i in sub for n, _ in pool[i]["traits"]}
+            hyps = {s for i in sub for n, s in pool[i]["traits"] if n == "HYPOTHETICAL"} or {None}
+            for hyp, rtype in itertools.product(hyps, types):
+                traits = {n: 0.9 for n in names - {"HYPOTHETICAL"}}
+                if hyp is not None:
+                    traits["HYPOTHETICAL"] = hyp
+                if trait_passes(x0["trait"], v0["trait"], rtype, traits) != trait_passes(
+                    x1["trait"], v1["trait"], rtype, traits
+                ):
+                    return None
+        return True
     return None
 
 
@@ -508,7 +593,9 @@ def replay(h: History, declared: dict[str, Any], link: bool, space: str, query: 
     return {subset_key(S): hybrid_state(c, S) for S in all_subsets(d_vis)}
 
 
-def trace_of(evidence: dict[str, Any], cfg: dict[str, Any], var: dict[str, str], maps: set[str], space: str, query: str):
+def trace_of(
+    evidence: dict[str, Any], cfg: dict[str, Any], var: dict[str, str], maps: set[str], space: str, query: str
+):
     recs = build_records(evidence, cfg, var, space)
     return tuple(
         (r.verdict, tuple(sorted(r.failed)))
@@ -551,18 +638,29 @@ def observation(h: History, view: str, capability: str, declared: dict[str, Any]
     return tuple(obs)
 
 
-def identification_set(ex: dict[str, Any], view: str, capability: str) -> tuple[set, dict[tuple, Any]]:
+def identification_set(ex: dict[str, Any], view: str, capability: str) -> tuple[set, dict[tuple, Any], bool]:
+    """SPEC 8.1: W over U ∪ {h*}; returns (W, all histories, whether h* is in U)."""
     histories = universe_histories(ex["universe"])
     t = ex["true"]
-    true_h = histories[(t["evidence"], t["executed"], t["variants"])]
+    true_idx = (t["evidence"], t["executed"], t["variants"])
+    true_h = histories[true_idx]
+    excluded = {tuple(x) for x in ex.get("exclude_from_universe", [])}
+    universe = [h for idx, h in histories.items() if idx not in excluded]
     args = (ex["declared"], ex["space"], ex["query"])
     target = observation(true_h, view, capability, *args)
     w = {
         history_family(h, ex["space"], ex["query"])
-        for h in histories.values()
+        for h in universe + [true_h]
         if observation(h, view, capability, *args) == target
     }
-    return w, histories
+    return w, histories, true_idx not in excluded
+
+
+def identification_state(w: set, true_in_universe: bool) -> str:
+    """SPEC 8.3 on the toy universes, where every witness lifts (W_lo = W_hi = W) and expansion saturates."""
+    if len(w) >= 2:
+        return "ambiguo"
+    return "identificado" if true_in_universe else "indeterminado"
 
 
 # --------------------------------------------------------------------------------------------------------------
@@ -585,32 +683,58 @@ def output_is_valid(state: str, families: Sequence[Sequence[Sequence[str]]]) -> 
     return not fams
 
 
+def certificate_accepted(
+    kind: str, S: frozenset[str], D: frozenset[str], view: str, capability: str, log: set[frozenset[str]]
+) -> bool:
+    """SPEC 9.2 acceptance table (step 0, A03)."""
+    ends = S in (frozenset(), D)
+    in_log = capability != "R-C" and S in log
+    if kind == "final":
+        return ends
+    if kind == "eval":
+        return in_log
+    if kind == "trace":
+        return (view == "L2-M" and ends) or in_log
+    if kind == "dummy":
+        return view != "L1"
+    raise ValueError(kind)
+
+
 def backing_check(
     D: frozenset[str],
     truth_sufficient: frozenset[frozenset[str]],
     certificates: Sequence[dict[str, Any]],
     states: dict[frozenset[str], str],
-) -> tuple[bool, bool]:
-    """Returns (all certificates true, coverage) per SPEC 9.2."""
+    view: str,
+    capability: str,
+    log: Iterable[Iterable[str]],
+) -> tuple[bool, bool, int]:
+    """Returns (all accepted certificates true, coverage, number discarded) per SPEC 9.2."""
+    logged = {frozenset(S) & D for S in log}
     all_true = True
+    discarded = 0
     certified: dict[frozenset[str], bool] = {}
-    dummies: set[str] = set()
+    Z: set[str] = set()
     for cert in certificates:
         S = frozenset(cert["subject"]) & D
+        if not certificate_accepted(cert["kind"], S, D, view, capability, logged):
+            discarded += 1
+            continue
         if cert["kind"] == "dummy":
             (f,) = S
             is_dummy = all(states[T | {f}] == states[T] for T in all_subsets(D - {f}))
             all_true &= is_dummy == cert["value"]
             if cert["value"]:
-                dummies |= S
+                Z.add(f)
             continue
         all_true &= (S in truth_sufficient) == cert["value"]
         certified[S] = cert["value"]
-    cert_suff = [S for S, v in certified.items() if v]
+    classes = {S - Z for S in certified}
+    suff_classes = [S - Z for S, v in certified.items() if v]
     covered = all(
-        S in certified or any(T < S for T in cert_suff) or bool(S & dummies) for S in all_subsets(D)
+        (S - Z) in classes or any(T < S - Z for T in suff_classes) for S in all_subsets(D)
     )
-    return all_true, covered
+    return all_true, covered, discarded
 
 
 CELLS = ("identificado", "ambiguo", "indeterminado", "incompleta", "inalterado")
@@ -708,6 +832,7 @@ def compute_metrics(queries: Sequence[dict[str, Any]]) -> dict[str, float]:
 
     cat = [q for q in q_c + q_inc if q["state"] in CATEGORICAL_STATES]
     bad = [q for q in cat if q["outcome"] in ("errado", "indevidamente_exclusivo")]
+    committed = [q for q in cat if q["outcome"] != "nao_comprometido"]
     null_q = [q for q in q_u if q["family"] == "N"]
     null_contrasts = sorted({q["contrast"] for q in queries if q["family"] == "N"})
     null_groups = sorted({q["group"] for q in queries if q["family"] == "N"})
@@ -716,6 +841,7 @@ def compute_metrics(queries: Sequence[dict[str, Any]]) -> dict[str, float]:
         "cobertura": sum(q["outcome"] == "correto_sustentado" for q in q_c) / len(q_c),
         "cobertura_bruta": sum(q["state"] in CATEGORICAL_STATES for q in q_c) / len(q_c),
         "risco_seletivo": len(bad) / len(cat),
+        "risco_comprometido": len(bad) / len(committed) if committed else 0.0,
         "null_group_rate": len({q["group"] for q in false_null}) / len(null_groups),
         "null_false_attributions_per_contrast": len(false_null) / len(null_contrasts),
         "unchanged_coverage": sum(q["outcome"] == "correto_sustentado" for q in q_u) / len(q_u),
@@ -879,14 +1005,89 @@ def test_dummy_certificates_and_truth(ex: dict[str, Any]) -> None:
     assert certified == sorted(ex["expected"]["certified"])
     assert truly == sorted(ex["expected"]["truly_dummy"])
     assert set(certified) <= set(truly), "a certificate must never be false"
-    assert dummy_certificate(c, "trait") is None and dummy_certificate(c, "occ") is None
+
+
+def random_contrast(rng: "random.Random", force: str | None = None) -> Contrast:
+    """A random one-medication contrast; `force` makes that factor differ between x0 and x1."""
+    ents = []
+    for _ in range(rng.randint(1, 5)):
+        traits = [[n, 0.9] for n in ("NEGATION", "DIAGNOSIS", "LOW_CONFIDENCE") if rng.random() < 0.3]
+        if rng.random() < 0.4:
+            traits.append(["HYPOTHETICAL", rng.choice([0.55, 0.62, 0.7])])
+        concepts = [[rng.choice(["C61", "E11.9", "R50.9"]), rng.choice([0.55, 0.6, 0.7, 0.9, 0.95])]
+                    for _ in range(rng.randint(0, 2))]
+        ents.append({"id": rng.choice([1, 2, 3]), "type": rng.choice(["DX_NAME", "SIGN"]),
+                     "score": rng.choice([0.55, 0.6, 0.7, 0.9]), "traits": traits, "concepts": concepts})
+    space = rng.choice(["CM", "WHO"])
+    levels = {
+        "occ": ["last_upsert", "first_upsert", "per_entity_any"],
+        "sel": ["all", "top1"],
+        "ent_thr": [0.55, 0.6, 0.65, 0.7],
+        "icd_thr": [0.55, 0.6, 0.65, 0.7],
+        "trait": ["v1", "v1_hyp_le_0.6", "v1_no_required", "v2", "neg_only"],
+        "map": ["cm_gated", "cm_ungated"] + (["who_exact_fb", "who_exact", "who_cat3"] if space == "WHO" else []),
+    }
+    x0 = {f: rng.choice(v) for f, v in levels.items()}
+    x1 = dict(x0)
+    for f in rng.sample(CONFIG_FACTORS, rng.randint(1, 3)):
+        x1[f] = rng.choice(levels[f])
+    if force is not None:
+        x1[force] = rng.choice([v for v in levels[force] if v != x0[force]])
+    factors = [f for f in CONFIG_FACTORS if x0[f] != x1[f]]
+    patches = {}
+    if ents and rng.random() < 0.3:
+        e = rng.choice(ents)
+        patches["patch:p"] = [{"op": "set_entity_score", "entity": e["id"], "value": rng.choice([0.58, 0.72])}]
+        factors.append("patch:p")
+    query = rng.choice(["C61", "E11.9", "E11.65", "R50.9"] if space == "CM" else ["C61", "E11", "E119", "R509"])
+    evidence = {"model_version": "3.0.0.20231001", "entities": ents}
+    return make_contrast(evidence, x0, x1, space, query, factors, patches=patches)
+
+
+def random_sel_contrast(rng: "random.Random") -> Contrast:
+    """Duplicate Ids and repeated codes, where the top1 output order (Id-group first appearance) matters."""
+    ents = [
+        {"id": rng.choice([1, 2]), "type": "DX_NAME", "score": rng.choice([0.5, 0.9]),
+         "traits": [["DIAGNOSIS", 0.9]],
+         "concepts": [[rng.choice(["C61", "R50.9"]), rng.choice([0.5, 0.9, 0.95])] for _ in range(rng.randint(1, 2))]}
+        for _ in range(rng.randint(2, 4))
+    ]
+    occ = rng.choice(["last_upsert", "first_upsert", "per_entity_any"])
+    x0 = {"preset": "V1", "occ": occ, "sel": "all"}
+    x1 = {"preset": "V1", "occ": occ, "sel": "top1"}
+    evidence = {"model_version": "3.0.0.20231001", "entities": ents}
+    return make_contrast(evidence, x0, x1, "CM", rng.choice(["C61", "R50.9"]), ["sel"])
+
+
+def test_dummy_rules_are_sound_on_random_contrasts() -> None:
+    """Brute force over random tiny responses with duplicate Ids: a reference certificate is never false."""
+    import random
+
+    rng = random.Random(20260930)
+    certified = 0
+    for force in (None, *CONFIG_FACTORS):
+        for _ in range(600):
+            c = random_contrast(rng, force)
+            for f in c.factors:
+                if dummy_certificate(c, f) is True:
+                    certified += 1
+                    assert truly_dummy(c, f), (f, c)
+    for _ in range(600):
+        c = random_sel_contrast(rng)
+        if dummy_certificate(c, "sel") is True:
+            certified += 1
+            assert truly_dummy(c, "sel"), c
+    assert certified > 1000
 
 
 @for_kind("bfs")
 def test_reference_bfs(ex: dict[str, Any]) -> None:
-    sufficient = {frozenset(s) for s in ex["sufficient"]}
     for case in ex["cases"]:
-        evaluated, family, complete = reference_bfs(ex["D"], lambda S: S in sufficient, case["budget"])
+        sufficient = {frozenset(s) for s in case.get("sufficient", ex["sufficient"])}
+        inadmissible = {frozenset(s) for s in case.get("inadmissible", ex.get("inadmissible", []))}
+        evaluated, family, complete = reference_bfs(
+            ex["D"], lambda S: S in sufficient, case["budget"], lambda S: S not in inadmissible
+        )
         exp = case["expected"]
         assert len(evaluated) == exp["evaluations"]
         assert family == fam(exp["family"])
@@ -899,8 +1100,9 @@ def test_reference_bfs(ex: dict[str, Any]) -> None:
 def test_identification_sets(ex: dict[str, Any]) -> None:
     histories = None
     for v in ex["views"]:
-        w, histories = identification_set(ex, v["view"], v["capability"])
+        w, histories, true_in_u = identification_set(ex, v["view"], v["capability"])
         assert w == {fam(f) for f in v["expected_families"]}, (v["view"], v["capability"])
+        assert identification_state(w, true_in_u) == v["expected_state"], (v["view"], v["capability"])
     t = ex["true"]
     true_h = histories[(t["evidence"], t["executed"], t["variants"])]
     assert history_family(true_h, ex["space"], ex["query"]) == fam(ex["expected_true_family"])
@@ -922,8 +1124,11 @@ def test_backing_certificates(ex: dict[str, Any]) -> None:
     a = analyze(contrast_from_family_example(source, source["factors"]))
     assert a.family == fam(ex["claimed_family"])
     for case in ex["cases"]:
-        all_true, covered = backing_check(a.D, a.sufficient, case["certificates"], a.states)
-        assert {"all_true": all_true, "covered": covered} == case["expected"], case["name"]
+        all_true, covered, discarded = backing_check(
+            a.D, a.sufficient, case["certificates"], a.states, case["view"], case["capability"], case["log"]
+        )
+        got = {"all_true": all_true, "covered": covered, "discarded": discarded}
+        assert got == case["expected"], case["name"]
 
 
 @for_kind("profiles")
