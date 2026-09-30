@@ -59,7 +59,9 @@ def test_l1_expansion_on_ex12(ex12):
     assert l1.W_lo >= {F(["ent_thr"]), F(["icd_thr"])}
     assert q.cell("L1", "R-C") == "ambiguo"
     # with the full response the evidence is observed: EX-12's L2-R x R-C is identified (U over hypotheses only)
-    assert q.cell("L2-R", "R-C") in ("identificado", "ambiguo")
+    assert q.cell("L2-R", "R-C") == "identificado"
+    assert q.cell("L2-M", "R-C") == "identificado"
+    assert not l1.saturated  # classes still grow at L = 2; ambiguity needs no saturation
     assert cache.stats and cache.stats[0]["hypotheses"] > 1
 
 
@@ -69,7 +71,7 @@ def test_unsupported_cells_stay_out(ex12):
     cells = [CellSpec.of("L2-R-A2", "R-C"), CellSpec.of("L2-M-A2", "R-C")]
     t = build_truth(Hybrids(c, ev, HIER), [("q", key)], partition="dev", scenario_family="I",
                     cells=cells, ident=ident_fn(c, ev, HIER, UniverseCache(L=2, max_dev=0)))
-    assert t.query("q").cell("L2-R-A2", "R-C") in ("identificado", "ambiguo", "indeterminado")
+    assert t.query("q").cell("L2-R-A2", "R-C") == "ambiguo"  # hidden non-top concepts of a
     with pytest.raises(KeyError):
         t.query("q").cell("L2-M-A2", "R-C")  # trace over expanded bundles is not covered
     with pytest.raises(NotImplementedError):
