@@ -596,6 +596,9 @@ Esta é a busca de referência usada para definir a "necessidade de orçamento" 
   - N1: `ent_thr`, `icd_thr`, `trait` ∈ {`v1`, `v1_hyp_le_0.6`, `v1_no_required`}, portão de `map`;
   - N2: `ent_thr`, `icd_thr`.
 
+  Células N1/N2 × capacidade (A21): em R-A, `evaluate(S)` com `S` não expressável levanta `Unavailable` e custa 0;
+  R-B ≡ R-A no núcleo local (7.3); em R-C não há replay.
+
 ### 7.2 Ablações e perdas combinadas
 
 | id | remove de L2-R/L2-M | efeito no replay (R29) |
@@ -605,7 +608,7 @@ Esta é a busca de referência usada para definir a "necessidade de orçamento" 
 | A3 | `code_link` | o broker replica com os níveis **declarados** (5.4) |
 | A4 | `env_versions` | nenhum (o broker usa o ambiente real). O método não sabe a versão da terminologia |
 | A5 | `ops_actions` | nenhum para presença |
-| A6 | registros reprovados do `trace` (só em L2-M; mantém os aprovados) | nenhum |
+| A6 | do `trace` (só em L2-M), tudo o que não é o candidato vencedor de um registro aprovado: os candidatos descartados por `sel`, os membros não vencedores (sobrescritos pelo upsert) e os registros reprovados (A11). Fica `trace_winners`: por registro aprovado, o candidato-fonte e as decisões | nenhum |
 
 Perdas combinadas (propostas; congeladas antes do teste):
 - `C1 = A1 + A3`
@@ -641,7 +644,10 @@ As células (R22):
   - Ler os finais observados não conta.
 - **Por contraste**, compartilhado por todas as consultas: `b ∈ {16, 32, 64}`. Com `|D| ≤ 6`, `b = 64` permite a
   enumeração completa ("regime suficiente").
-- **H1a primário** usa `b = 64`; as curvas de 16 e 32 são secundárias **[revisar]**.
+- **H1a primário** usa `b = 16`, o regime restrito de §10.2 do protocolo, onde o material armazenado de L2-M pode
+  poupar avaliações; 32 e 64 são secundários (R09, A05, D7.9).
+- `evaluate` devolve também o traço do híbrido. Esse traço conta como pago e pode lastrear certificados `trace` em
+  qualquer vista (9.2).
 - Custos em bytes lidos, CPU e memória são medidos à parte (§10).
 
 ## 8. Referência de identificação (§7.4, R10)
@@ -667,8 +673,9 @@ As células (R22):
 | traço | L2-M (aprovados só, em A6) | por registro de `a`, em x0 e x1: `verdict` e o conjunto `failed` |
 | replay | R-A (ou R-B, restrito) | `state_S(a)` retornado pelo broker para todo `S ⊆ D_vis`. `D_vis` é o diff executado com vínculo e o declarado sem ele; o broker usa os níveis da regra 5.4 e as variantes da história |
 
-- `W(v, r) = { F(h′) : h′ ∈ U, o_{v,r}(h′) = o_{v,r}(h*) }`, onde `h*` é a história verdadeira. `F(h*) = F*` está em
-  `W` por construção.
+- `W(v, r) = { F(h′) : h′ ∈ U ∪ {h*}, o_{v,r}(h′) = o_{v,r}(h*) }`, onde `h*` é a história verdadeira. A união com
+  `{h*}` garante `F* ∈ W` mesmo quando `h*` não é representável em U (por exemplo, `a` com mais candidatos que `L`;
+  A01). Histórias sem mudança de `a` têm observação diferente de `h*` (os finais diferem) e nunca entram.
 
 ### 8.2 Universo declarado U (β3 implementa)
 
@@ -677,7 +684,10 @@ As células (R22):
     limiar" por causa da variante `gt`.
   - A classe de traço é (NEG, LOW_CONFIDENCE, PERTAINS_TO_FAMILY, faixa de HYP ∈ {nenhum, ≤ 0,60, (0,60; 0,65],
     > 0,65}, presença de DXS).
-  - A classe de tipo é DX_NAME ou outro. A classe de `map` é subcategoria exata, fallback de categoria ou `unmapped`.
+  - A classe de tipo é DX_NAME ou outro.
+  - A classe de `map` é relativa à chave de `a` (A21): para cada nível de `map` do contraste, se o código passa no
+    portão e projeta para a chave de `a` por correspondência exata (subcategoria, ou categoria de 3 caracteres igual
+    ao código), por fallback de prefixo, ou não projeta para ela.
   - Símbolos com a mesma assinatura de comportamento (o mesmo vetor aprovado/reprovado sobre todos os híbridos e
     variantes) são fundidos.
 - **Bundle de candidatos:** sequência ordenada de até `L = 4` símbolos, com a partição em entidades. A ordem importa
@@ -685,21 +695,36 @@ As células (R22):
 - **Níveis e variantes:** as hipóteses de 4.3, com no máximo 3 fatores alterados.
 - **Expansão** em largura por comprimento, deduplicando por classe `(tabela-verdade, observação)`. `saturated` =
   passar de `L−1` para `L` não criou classe nova.
+- **Cortes de recurso** (A01, A15): a expansão tem orçamento por consulta (tempo e memória, fixados em dev na β3).
+  Qualquer corte, por orçamento, por limite de símbolos ou por `L`, conta como **não saturado**.
 
 ### 8.3 Limites e estado de identificação
 
-- **`W_hi`:** famílias das classes de U com a mesma observação **marginal** em `a`. As demais associações ficam livres.
-- **`W_lo` ⊆ `W_hi`:** famílias das classes cuja testemunha **se eleva** ao grupo verdadeiro.
-  1. Substituir os candidatos de `a` na evidência real pelo bundle da testemunha, preservando as invariantes de 4.5.
-  2. Reexecutar.
-  3. Exigir que toda observação visível do grupo (finais das outras chaves, traços, replay) fique inalterada.
+- **`W_hi`:** famílias das classes de `U ∪ {classe(h*)}` com a mesma observação **marginal** em `a` que `h*`. As
+  demais associações ficam livres. Por construção, `F* ∈ W_hi`.
+- **`W_lo`:** `{F*}` mais as famílias das classes **que já contribuem para `W_hi`** cuja testemunha **se eleva** ao
+  grupo verdadeiro:
+  1. substituir os candidatos de `a` na evidência real pelo bundle da testemunha, preservando as invariantes de 4.5;
+  2. reexecutar;
+  3. exigir que a observação marginal de `a` **e** toda observação visível do resto do grupo (finais das outras
+     chaves, traços, replay) fiquem inalteradas.
 
-  `F*` está sempre em `W_lo`.
+  Assim `F* ∈ W_lo ⊆ W_hi` vale por definição (A01).
+- **Saturação efetiva:** U conta como saturado para a consulta só se a expansão saturou (8.2) **e** `classe(h*) ∈ U`.
 - **Estado:**
   - `identificado`: `W_lo = W_hi = {F*}` e U saturado.
   - `ambiguo`: `|W_lo| ≥ 2`. Existem duas testemunhas, então a ambiguidade está demonstrada mesmo sem saturação.
   - `indeterminado`: `|W_lo| = 1` e (`|W_hi| > 1` ou U não saturado). É reportado e excluído dos denominadores
     primários.
+
+  **Partição.** Como `F* ∈ W_lo`, vale `|W_lo| ≥ 1`. Se `|W_lo| ≥ 2`, o estado é `ambiguo`. Se `|W_lo| = 1`, então
+  `W_lo = {F*}`: ou `W_hi = {F*}` e U saturado (`identificado`), ou não (`indeterminado`). Os três casos são
+  exaustivos e disjuntos.
+
+**EX-24 (`h* ∉ U`, A01).** O cenário de EX-12, mas com U sem a evidência verdadeira `(0,58; 0,90)`.
+- L1 × R-C: `W_hi = W_lo = {{{ent_thr}}, {{icd_thr}}, {{ent_thr, icd_thr}}}` → `ambiguo`. Sem a união com `{h*}`,
+  `W` seria só `{{{icd_thr}}, {{ent_thr, icd_thr}}}` e não conteria `F*`.
+- L2-R × R-C: `W_lo = W_hi = {F*}`, mas `h* ∉ U` → não saturado → `indeterminado`.
 - **Escopo:** a identificação é relativa a U. Ausência de testemunha não é identificação global.
 - **Adequação** (só dev/cal):
   - toda tabela-verdade de associação alterada de dev/cal tem de ser gerada por U;
@@ -764,21 +789,30 @@ nessa vista é `alternativas` com as duas famílias.
 
 ### 9.2 Lastro de `explicacao_verificada` (R12)
 
-A saída traz certificados `(kind, S ou f, valor)`:
+A saída traz certificados `(kind, S ou f, valor)`. Cada um é avaliado no contexto da **execução** do método: método ×
+vista × capacidade × orçamento × contraste, com o log de `evaluate` do `Env` dessa execução.
 
-| `kind` | afirma | disponível quando |
+| `kind` | afirma | aceito quando (A03) |
 |---|---|---|
-| `final` | `∅` insuficiente e `D` suficiente | sempre (finais observados) |
-| `eval` | `suff(S)` = valor, com `S` avaliado neste contraste (consta do log do `Env`) | R-A/R-B |
-| `trace` | `suff(S)` = valor, derivado dos traços armazenados | L2-M |
-| `dummy` | `f` irrelevante para `a` (4.6) | qualquer |
+| `final` | `suff(∅) = falso` ou `suff(D) = verdadeiro` | sempre, só para `S ∈ {∅, D}` (finais observados) |
+| `eval` | `suff(S)` = valor | `S` consta do log de `evaluate` desta execução (logo só em R-A/R-B) |
+| `trace` | `suff(S)` = valor, lido do traço de `h_S` (o `state` de `a` em `h_S` é "presente" se e só se o traço tem registro aprovado com a chave de `a`) | (i) em L2-M, para `S ∈ {∅, D}`, com os traços armazenados de x0 e x1 (também sob A6: os vencedores bastam para o estado); (ii) em qualquer vista, para `S` que consta do log de `evaluate` (o traço devolvido já foi pago; D7.9) |
+| `dummy` | `f` irrelevante para `a` (4.6) | a vista mostra a evidência (`acm_response` ou `acm_response_top1`): L2-*, N1, N2; nunca em L1 |
+
+A derivação por traço é só essa leitura do estado em `h_S`. A regra fechada proposta pela auditoria ("registro único
+com `failed = {f}` em x0 e aprovado em x1, com os demais fatores dummy ⇒ `suff({f})`") não é um tipo à parte: ela
+decorre de `final` + `dummy` pela cobertura módulo irrelevantes do passo 3.
 
 O avaliador:
-1. Traduz handles para nomes canônicos e intersecta cada `S` com `D` executado.
-2. Confere **cada** afirmação contra a tabela-verdade: o valor real, não o que o broker devolveu. Uma afirmação falsa
-   → `errado`.
-3. Confere a **cobertura**: todo `S ⊆ D` tem de ter valor certificado, ou conter propriamente um `S` certificado
-   suficiente, ou conter um fator certificado dummy.
+0. **Descarte** (A03). Traduz handles para nomes canônicos e intersecta cada `S` com `D` executado (o mesmo vale para
+   os `S` do log). Descarta, com o motivo registrado, todo certificado não aceito pela tabela acima: `eval` fora do
+   log, tipo indisponível na célula, `final` com `S ∉ {∅, D}`. Descartados não contam para nada.
+1. Confere **cada** certificado restante contra a tabela-verdade: o valor real, não o que o broker devolveu. Um
+   certificado falso → `errado` (em qualquer célula, A14).
+2. Seja `Z` o conjunto de fatores com `dummy` verdadeiro aceito. Como `state_S = state_{S∖Z}`, cada certificado de
+   `S` vale para toda a classe `{S′ : S′∖Z = S∖Z}`.
+3. **Cobertura:** todo `S ⊆ D` tem de ter `S∖Z = T∖Z` para algum `T` certificado, ou `S∖Z ⊋ T∖Z` para algum `T`
+   certificado suficiente.
 4. Sem cobertura, a saída não tem lastro → `indevidamente_exclusivo`.
 
 **EX-21.** Tabela-verdade de EX-10, afirmação `{{ent_thr}}`.
@@ -788,6 +822,13 @@ O avaliador:
 - (c) Com `eval {ent_thr, icd_thr}` suficiente: afirmação falsa.
 - (d) `dummy(icd_thr)` no lugar das avaliações com `icd_thr`: cobre, mas o certificado é falso (`{ent_thr}` é
   suficiente e `{ent_thr, icd_thr}` não) → errado.
+
+Os casos (a)–(d) são em L2-R × R-A, com todos os `S` avaliados no log. Casos de descarte (A03):
+- (e) Os certificados de (a), mas o log não tem `{icd_thr, patch:p3}`: o `eval` desse `S` é descartado e a
+  cobertura falha, como em (b).
+- (f) L2-R × R-A, com `trace` de `{icd_thr, patch:p3}` e esse `S` fora do log: descartado; sem cobertura.
+- (g) Idem, com `{icd_thr, patch:p3}` no log: o `trace` é aceito e cobre.
+- (h) L2-R × R-C: todos os `eval` de (a) são descartados (não há log); restam os `final`; sem cobertura.
 
 ### 9.3 Tabela de pontuação (R11, R26)
 
@@ -813,8 +854,8 @@ protocolo (efeitos médios).
 | célula | regra |
 |---|---|
 | `identificado` | certificado falso → errado; `F ≠ F*` → errado; `F = F*` sem lastro → indevidamente exclusivo; `F = F*` com lastro → correto sustentado |
-| `ambiguo` | `F = F*` → indevidamente exclusivo (acerto por acaso); senão → errado |
-| `incompleta` | `F = F*_adm` → indevidamente exclusivo; senão → errado |
+| `ambiguo` | certificado falso → errado; `F = F*` → indevidamente exclusivo (acerto por acaso); senão → errado |
+| `incompleta` | certificado falso → errado; `F = F*_adm` → indevidamente exclusivo; senão → errado |
 | `inalterado` | errado (falsa atribuição) |
 | `indeterminado` | excluído |
 
@@ -839,8 +880,13 @@ protocolo (efeitos médios).
 | `orcamento_esgotado` | apropriada se a necessidade do contraste passa de `b`; desnecessária senão | desnecessária | excluído |
 | `falha_de_execucao` | falha | falha | falha (fora dos primários) |
 
-A **necessidade** de um contraste é o número de avaliações da BFS conjunta de referência (6.3). Ela usa os
-certificados dummy de referência que a vista permite: trace em L2-M, evidência em L2-R.
+A **necessidade** de um contraste é o número de avaliações da BFS conjunta de referência (6.3), com a poda por
+dummy de referência quando a vista mostra a evidência. Quando a capacidade não executa híbridos (R-C, ou N1/N2 sem
+nenhum `S` expressável), a necessidade é **0**, e `orcamento_esgotado` é sempre desnecessária (A13). Não se usa
+`+∞`, que tornaria a abstenção apropriada.
+
+**Orientação aos métodos** (A21): `contrafactual_indisponivel` só é apropriada quando falta a resposta armazenada
+para um híbrido (célula `incompleta`). Em R-C, a falta de replay pede `informacao_insuficiente` ou `alternativas`.
 
 Exemplos de célula × estado:
 
@@ -881,6 +927,24 @@ Exemplos de célula × estado:
 | EX-S33 | incompleta | informação insuficiente | abstenção apropriada |
 | EX-S34 | incompleta | ausência de mudança | errado |
 | EX-S35 | identificado | V(F1), com lastro e um certificado falso | errado |
+| EX-S36 | ambíguo, `W_lo = W_hi = {F1, F2}` | V(F1), com um certificado falso | errado (A14) |
+| EX-S37 | ambíguo, necessidade 6, `b` = 64 | orçamento esgotado | abstenção desnecessária |
+| EX-S38 | ambíguo | contrafactual indisponível | abstenção desnecessária |
+| EX-S39 | ambíguo | falha de execução | falha |
+| EX-S40 | incompleta | compatível com variabilidade | errado |
+| EX-S41 | incompleta, necessidade 6, `b` = 4 | orçamento esgotado | abstenção apropriada |
+| EX-S42 | incompleta | falha de execução | falha |
+| EX-S43 | inalterado | orçamento esgotado | abstenção desnecessária |
+| EX-S44 | inalterado | contrafactual indisponível | abstenção desnecessária |
+| EX-S45 | inalterado | falha de execução | falha |
+| EX-S46 | indeterminado, `W_lo = {F1}`, `W_hi = {F1, F2}` | A({F1, F2}) | excluído |
+| EX-S47 | idem | ausência de mudança | excluído |
+| EX-S48 | idem | compatível com variabilidade | excluído |
+| EX-S49 | idem | informação insuficiente | excluído |
+| EX-S50 | idem | orçamento esgotado | excluído |
+| EX-S51 | idem | contrafactual indisponível | excluído |
+| EX-S52 | idem | falha de execução | falha |
+| EX-S53 | identificado, R-C (necessidade 0), `b` = 16 | orçamento esgotado | abstenção desnecessária |
 
 Legenda:
 - `F1 = {{ent_thr}}`
