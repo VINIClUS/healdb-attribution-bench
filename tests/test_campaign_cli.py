@@ -45,11 +45,12 @@ def write_snapshots(root: Path) -> Path:
     v2.mkdir(parents=True)
     pq.write_table(pa.table({"id_medication": [101, 102, 201],
                              "ds_text_submitted": ["texto submetido 101", "texto submetido 102",
-                                                   "texto submetido 201"]}), v2 / "api_response.parquet")
+                                                   "texto submetido 201"]}),
+                   v2 / "hd_int_med_disease_api_response.parquet")
     pq.write_table(pa.table({"id_medication": [101, 102, 201],
                              "ds_indication": ["indicado para hipertensao 101", "indicado para dor 102",
                                                "indicado para febre 201"]}),
-                   v2 / "translate_eng_leaflet_section.parquet")
+                   v2 / "hd_translate_eng_leaflet_section.parquet")
     return root / "snapshots"
 
 
