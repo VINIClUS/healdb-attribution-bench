@@ -85,7 +85,9 @@ GATE 1 aprovado; α3 concluído; α4 concluído exceto a execução Docker (scri
 
 ## Testes
 
-- Não-dumps: `uv run pytest -m "not dumps" tests/ -q` → `154 passed, 31 deselected in 1.08s`.
+- Suite padrão (após merge de main): `uv run pytest -q` → `485 passed, 45 deselected, 3 warnings in 14.84s`.
+- Dumps de α4: `uv run pytest -m dumps tests/test_historical_{contrast,repeatability,translation}.py -q` →
+  `4 passed, 40 deselected in 110.09s`; `tests/test_historical_{text_v1,sources,dumps_identity}.py` verdes.
 - Dumps: ver bloco GATE1 acima.
 
 ## Números re-derivados
