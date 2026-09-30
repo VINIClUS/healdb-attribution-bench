@@ -25,6 +25,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--max-groups", type=int, default=None)
     ap.add_argument("--methods", default=",".join(DEFAULT_METHODS))
     ap.add_argument("--info-fraction", type=float, default=0.2)
+    ap.add_argument("--shard", default="0/1", help="i/n: run only contrasts i, i+n, ... (one process per CPU)")
     a = ap.parse_args(argv)
     t0 = time.monotonic()
     methods = tuple(m for m in a.methods.split(",") if m)
@@ -37,6 +38,8 @@ def main(argv: list[str] | None = None) -> int:
     evidence, hier, texts = load_inputs(a.partition)
     scenarios = generate(a.partition, seed=a.seed, evidence=evidence, hier=hier, max_groups=a.max_groups)
     scenarios = scenarios[0] if isinstance(scenarios, tuple) else scenarios
+    i, n = (int(x) for x in a.shard.split("/"))
+    scenarios = scenarios[i::n]  # contrasts write disjoint files; create the HMAC key before launching shards
     batch = Batch(a.partition, a.name, evidence, hier, texts, methods=methods, info_fraction=a.info_fraction,
                   seed=a.seed)
     counts = batch.run(scenarios, progress=lambda s: print(s, file=sys.stderr, flush=True))

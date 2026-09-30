@@ -68,8 +68,13 @@ class Batch:
     def truth(self, scenario, run_cells: Iterable[Cell]) -> Path:
         c: Contrast = scenario.contrast
         path = self.truth_dir / "contrasts" / f"{c.cid}.json"
+        stored = None
         if path.exists():
-            stored = json.loads(path.read_text(encoding="utf-8"))["contrast_hash"]
+            try:
+                stored = json.loads(path.read_text(encoding="utf-8"))["contrast_hash"]
+            except (json.JSONDecodeError, KeyError):
+                path.unlink()  # a write interrupted by a kill: rebuild it, never trust it
+        if stored is not None:
             if stored != c.content_hash():
                 raise RuntimeError(f"stale truth for {c.cid}: the contrast changed since it was written ({path})")
             return path
