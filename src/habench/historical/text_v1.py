@@ -152,7 +152,13 @@ def study() -> dict:
     dotted = sum("." in r["cd_icd_full"] for r in md)
     in_hier = sum(nodot(r["cd_icd_full"]) in h.cat or nodot(r["cd_icd_full"]) in h.subcat for r in md)
 
+    rid = {run: {(d.get("ResponseMetadata") or {}).get("RequestId") for d in docs.values()} - {None}
+           for run, docs in (("v1", v1_docs), ("v2", v2_docs), ("run_2024", g_docs))}
     return {
+        "call_metadata": {run: call_metadata(docs) for run, docs in (("v1", v1_docs), ("v2", v2_docs),
+                                                                      ("run_2024", g_docs))},
+        "shared_request_ids": {"v1_v2": len(rid["v1"] & rid["v2"]), "v1_2024": len(rid["v1"] & rid["run_2024"]),
+                               "v2_2024": len(rid["v2"] & rid["run_2024"])},
         "compared": "text[BeginOffset:EndOffset] == Text in code points, entities and attributes; "
                     "only responses with entities are counted; coverage = union of span intervals / text length",
         "v1": {
@@ -179,6 +185,19 @@ def study() -> dict:
         },
         "translation_0327_vs_v1": {"identical": len(same_tr), "different": len(diff_tr), "different_ids": diff_tr},
         "v1_md_code_system": {"rows": len(md), "dotted": dotted, "nodot_exact_in_hierarchy": in_hier},
+    }
+
+
+def call_metadata(docs: Mapping[int, dict]) -> dict:
+    """Per-call provenance stored in each response: ModelVersion, RequestId and HTTP date."""
+    meta = [d.get("ResponseMetadata") or {} for d in docs.values()]
+    rids = [m.get("RequestId") for m in meta if m.get("RequestId")]
+    return {
+        "responses": len(docs),
+        "with_model_version": sum(1 for d in docs.values() if d.get("ModelVersion")),
+        "with_request_id": len(rids),
+        "distinct_request_ids": len(set(rids)),
+        "with_http_date": sum(1 for m in meta if (m.get("HTTPHeaders") or {}).get("date")),
     }
 
 

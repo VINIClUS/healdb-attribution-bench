@@ -84,6 +84,17 @@ def test_cm_space_presence_equals_md(v1):
     assert {k.version for k in res.present} == {"acm:3.0.0.20231001"}
 
 
+def test_documented_hypothetical_rule_does_not_reproduce_md(v1):
+    """Code/doc drift (F1 §6 item 2): the header's "HYPOTHETICAL accepted only at <= 0.6" drops md rows
+    that V1 stored, so the executed rule is the code's > 0.65 veto, not the documented one."""
+    ev, hier, _ = v1
+    code = core.run(V1, ev, hier, core.CM).present
+    doc = core.run(V1.with_(trait="v1_hyp_le_0.6"), ev, hier, core.CM).present
+    print(f"documented rule: {len(doc)} keys, {len(code - doc)} V1 md keys lost")
+    assert doc < code
+    assert (len(doc), len(code - doc)) == (39_319, 3_875)
+
+
 def test_hierarchy_version_equal_v1_v2():
     from habench.pipeline.mapping import load_hierarchy
 
