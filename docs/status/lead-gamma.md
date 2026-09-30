@@ -37,14 +37,35 @@ falta T21 runner e o teste de ponta a ponta de M contra o oráculo.
   história declarada → V), EX-12 em R-C com dummy, faixa HYPOTHETICAL oculta, orçamento, replay inválido,
   inadmissível.
 
+- T11 `env/broker.py`, `env/child.py`, `env/rpc.py`: `BrokerEnv` (réplica com níveis executados com vínculo e
+  declarados sem ele; A2 sobre evidência top-1; handles opacos de patch; handles inertes; `Ledger`), N1/N2 via
+  `oracle.truth.default_expressible` do β (a mesma regra da necessidade da verdade), RPC por processo filho `spawn`
+  com o hook instalado antes de importar o método, `__main__` vazio no filho. Falha, travamento ou timeout do
+  filho → `falha_de_execucao` em todas as consultas.
+- B2 `methods/b2.py`: primeira divergência (resposta → registros do traço → estágio do núcleo), candidatos
+  `noncausal`; sem traço, degenera em B1.
+- M: guarda de hash (respostas diferem sem handle de evidência visível → nunca V, inclusive `lenient`);
+  `MLenient` para a varredura de rigor em cal.
+- T21 `runner/matrix.py`, `runner/batch.py`, `runner/__main__.py`: matriz eficiente (n/a L1 × R-A/R-B;
+  equivalências R-B ≡ R-A sem prep e L3 ≡ L2), lote retomável (verdade, vistas, execuções; recusa verdade velha
+  pelo `contrast_hash`), saídas em `runs/<partição>/<lote>/<cid>/<vista>__<cap>__b<orç>__<método>.json`.
+- Aceitação (`tests/test_runner_acceptance.py`): M = oráculo em L2-M × R-A, orçamento ilimitado, em 9 contrastes
+  de brinquedo (EX-07, 08, 09, 10, 11, 14 componentes e bundle, occ×sel no espaço CM, map), via construtor de vistas
+  e broker reais; todo certificado verdadeiro na tabela-verdade, `eval` só do log, cobertura §9.2 passo 3 satisfeita.
+  Os 6 métodos rodam isolados sem `falha_de_execucao`.
+
 ## Em andamento
-- T11 broker + RPC isolado (worker).
 - T9 cenários N/F/M/O/X/I e catálogo (worker).
 
 ## Próximo
-- T21 runner (matriz eficiente, lote retomável em dev/cal, smoke de 5 grupos).
-- Teste de aceitação de M: igual ao oráculo em 100% dos casos em L2-M × R-A com orçamento ilimitado.
-- B2 sobre artefatos materializados.
+- Revisar T9; smoke de 5 grupos dev (`-m dumps`) com matriz reduzida; aceitação de M sobre cenários reais.
+
+## Why-Diff (opcional): não implementado
+- Não há código público (ver `docs/design/ambiente_e_comparadores.md` §3). O exemplo do artigo (Fig. 7a/8, Tabela 2)
+  só existe como grafos renderizados: o texto dá os conjuntos resultantes (EQE, EQA, UEQ, UM2), não as arestas.
+  Um teste de fidelidade exigiria reconstruir as arestas a partir das figuras, o que é inferência.
+- Pelo §10.1 do protocolo, uma heurística própria não recebe o nome de Why-Diff. O comparador publicado executado
+  é o BugDoc. As alegações de superioridade sobre Why-Diff ficam restritas (limitação registrada).
 
 ## Testes
 - `uv run pytest -q` → 650 passed, 3 xfailed (antes de M); `tests/test_methods_m.py` → 10 passed.
