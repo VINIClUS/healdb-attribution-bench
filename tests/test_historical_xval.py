@@ -94,29 +94,52 @@ def test_coverage_table_mentions_every_factor_and_level():
     assert "não" in row["`occ``per_entity_any`"] and "não" in row["`dup_ind``True`"]
 
 
+def _toy():
+    from habench.pipeline.evidence import Evidence
+    from habench.pipeline.mapping import Hierarchy
+
+    def ent(code, traits):
+        return {"Id": 1, "Type": "DX_NAME", "Score": 0.9, "Text": "x", "Category": "MEDICAL_CONDITION",
+                "Traits": [{"Name": n, "Score": s} for n, s in traits],
+                "ICD10CMConcepts": [{"Code": code, "Score": 0.9, "Description": code}]}
+
+    def resp(*ents):
+        return json.dumps({"Entities": list(ents), "ModelVersion": "m", "ResponseMetadata": {}})
+
+    ev = Evidence.from_responses([
+        (1, resp(ent("A01", [("DIAGNOSIS", 0.8), ("SIGN", 0.8)]))),  # tie on the main trait
+        (2, resp(ent("A01.1", [("SYMPTOM", 0.9)]))),
+    ])
+    hier = Hierarchy.from_rows([{"cd_cat": "A01", "id_cat": 1, "id_group": 1}], [])
+    return ev, hier
+
+
 def test_expected_and_compare_all(tmp_path):
     from habench.historical.replay import write_tsv
     from habench.pipeline.tables_v1 import MD_COLUMNS
 
-    calls = []
-
-    def fake_expected(cfg, ev, hier):
-        calls.append(cfg)
-        return [{c: (i if c == "id_med_disease" else 1) for c in MD_COLUMNS} | {
-            "cd_icd_full": "A01", "id_icd_group": None, "id_icd_cat": None, "id_icd_subcat": None, "vl_score": 0.7,
-            "vl_entity_score": 0.8, "nm_trait_main": None, "vl_trait_main_score": None, "fl_low_confidence": 0,
-        } for i in (1, 2)]
-
-    cfgs = xval.sample_hybrids(3)
-    (tmp_path / "configs.json").write_text(json.dumps([{"cfg_id": xval.cfg_id(c), "config": c.as_dict()} for c in cfgs]))
-    rows = fake_expected(cfgs[0], None, None)
-    write_tsv(tmp_path / f"{xval.cfg_id(cfgs[0])}.tsv", MD_COLUMNS, rows)
-    write_tsv(tmp_path / f"{xval.cfg_id(cfgs[1])}.tsv", MD_COLUMNS, rows[:1])
-    orig = xval.expected
-    xval.expected = fake_expected
-    try:
-        res = xval.compare_all(tmp_path, ev_dev=object(), hier=object())
-    finally:
-        xval.expected = orig
+    ev, hier = _toy()
+    v1 = catalog.V1
+    other = v1.with_(map="cm_ungated")
+    missing = v1.with_(ent_thr=0.55)
+    (tmp_path / "configs.json").write_text(json.dumps(
+        [{"cfg_id": xval.cfg_id(c), "config": c.as_dict()} for c in (v1, other, missing)]))
+    ours = xval.expected(v1, ev, hier)
+    assert [r["nm_trait_main"] for r in ours] == ["DIAGNOSIS", "SYMPTOM"]  # tie: trait PK order
+    write_tsv(tmp_path / f"{xval.cfg_id(v1)}.tsv", MD_COLUMNS, ours)
+    # SQL returned rows in another order and broke the tie the other way
+    swapped = [ours[1] | {"id_med_disease": 1}, ours[0] | {"id_med_disease": 2, "nm_trait_main": "SIGN"}]
+    write_tsv(tmp_path / f"{xval.cfg_id(other)}.tsv", MD_COLUMNS, swapped)
+    res = xval.compare_all(tmp_path, ev_dev=ev, hier=hier)
     assert [r["status"] for r in res] == ["compared", "compared", "missing"]
-    assert res[0]["equal"] and not res[1]["equal"] and res[1]["n_only_expected"] == 1
+    assert res[0]["equal"] and res[0]["agrees"]
+    assert not res[1]["equal"] and res[1]["agrees"]
+    assert res[1]["natural"]["n_trait_main_ties"] == 1 and res[1]["natural"]["n_other_differences"] == 0
+
+
+def test_compare_natural_flags_a_non_tie():
+    ev, hier = _toy()
+    ours = xval.expected(catalog.V1, ev, hier)
+    bad = [ours[0] | {"nm_trait_main": "NEGATION"}, ours[1] | {"vl_score": 0.5}]
+    nat = xval.compare_natural(catalog.V1, ours, bad, ev, hier)
+    assert nat["presence_equal"] and nat["n_trait_main_ties"] == 0 and nat["n_other_differences"] == 2

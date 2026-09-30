@@ -163,8 +163,49 @@ def expected(cfg: Config, ev_dev, hier) -> list[dict]:
     return _md_like(ev_dev, hier, cfg, mapping.v1_ids, 1)
 
 
+def compare_natural(cfg: Config, ours: list[dict], theirs: list[dict], ev_dev, hier) -> dict:
+    """Comparison by natural key (id_medication, cd_icd_full), ignoring the surrogate id and row order.
+
+    link@405a10c has no ORDER BY: both the AUTO_INCREMENT ids and the nm_trait_main tie-break follow the order in
+    which MySQL returns the joined rows. A nm_trait_main difference is a `tie` when the historical name carries the
+    record's maximum trait score (the value both sides store as vl_trait_main_score); anything else is `other`.
+    """
+    from habench.pipeline import core
+
+    key = ("id_medication", "cd_icd_full")
+    o = {tuple(r[c] for c in key): r for r in ours}
+    t = {tuple(r[c] for c in key): r for r in theirs}
+    e = core.evaluate(cfg, ev_dev, hier)
+    rec = e.records
+    traits = {(int(rec.med[i]), ev_dev.codes[rec.code[i]]): rec.traits[i] for i in range(len(rec)) if e.passed[i]}
+    ties, other = 0, []
+    for k in sorted(o.keys() & t.keys()):
+        for c, a in o[k].items():
+            b = t[k][c]
+            if c == "id_med_disease" or (type(a) is type(b) and a == b):
+                continue
+            tr = traits.get(k, {})
+            top = max(((s or 0) for s in tr.values()), default=None)
+            if c == "nm_trait_main" and b in tr and (tr[b] or 0) == top:
+                ties += 1
+            else:
+                other.append([list(k), c, a, b])
+    return {
+        "presence_equal": o.keys() == t.keys(),
+        "n_only_expected": len(o.keys() - t.keys()),
+        "n_only_historical": len(t.keys() - o.keys()),
+        "n_trait_main_ties": ties,
+        "n_other_differences": len(other),
+        "other_sample": other[:5],
+    }
+
+
 def compare_all(out_dir: Path | str = XVAL_DIR, ev_dev=None, hier=None) -> list[dict]:
-    """Exact comparison of every `<cfg_id>.tsv` in `out_dir` with the core's expected `md` rows."""
+    """Every `<cfg_id>.tsv` in `out_dir` against the core's expected `md` rows.
+
+    `equal` is the strict comparison (ids, order, all columns). `natural` compares by natural key; a config
+    `agrees` when presence is equal and the only differences are nm_trait_main score ties.
+    """
     from habench.historical.replay import MD_KINDS, read_tsv
     from habench.pipeline.tables_v1 import MD_COLUMNS
 
@@ -187,7 +228,10 @@ def compare_all(out_dir: Path | str = XVAL_DIR, ev_dev=None, hier=None) -> list[
         ours = expected(cfg, ev_dev, hier)
         cmp = compare_rows([{c: r[c] for c in MD_COLUMNS} for r in ours], theirs, ("id_med_disease",), ())
         equal = not cmp["only_ours"] and not cmp["only_theirs"] and not cmp["differ"] and cmp["order_equal"]
+        nat = compare_natural(cfg, ours, theirs, ev_dev, hier)
         results.append({
+            "natural": nat,
+            "agrees": nat["presence_equal"] and nat["n_other_differences"] == 0,
             "cfg_id": e["cfg_id"], "config": e["config"], "status": "compared", "equal": equal,
             "n_expected": cmp["n_ours"], "n_historical": cmp["n_theirs"],
             "n_only_expected": len(cmp["only_ours"]), "n_only_historical": len(cmp["only_theirs"]),
@@ -259,10 +303,14 @@ def main(argv: list[str]) -> int:
     if cmd == "compare":
         res = compare_all(XVAL_DIR)
         (XVAL_DIR / "xval_result.json").write_text(json.dumps(res, indent=1, sort_keys=True) + "\n", encoding="utf-8")
-        bad = [r for r in res if not r["equal"]]
-        print(f"{len(res) - len(bad)}/{len(res)} configurations equal")
+        strict = sum(r["equal"] for r in res)
+        bad = [r for r in res if not r.get("agrees")]
+        ties = sum(r["natural"]["n_trait_main_ties"] for r in res if "natural" in r)
+        print(f"strict (ids, order, all columns): {strict}/{len(res)} configurations equal")
+        print(f"natural key: {len(res) - len(bad)}/{len(res)} agree (presence equal; only nm_trait_main ties differ, "
+              f"{ties} tie rows in total)")
         for r in bad:
-            print(r["cfg_id"], r["status"], r.get("n_expected"), r.get("n_historical"), r.get("n_differ"))
+            print(r["cfg_id"], r["status"], r.get("natural"))
         return 1 if bad else 0
     if cmd == "coverage":
         print(coverage_table(), end="")
