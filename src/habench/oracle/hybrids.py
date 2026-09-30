@@ -24,7 +24,7 @@ from habench.pipeline.catalog import Config, Level
 from habench.pipeline.core import CM, WHO, RunResult
 from habench.pipeline.evidence import Evidence
 from habench.pipeline.mapping import Hierarchy
-from habench.oracle.contrast import Contrast
+from habench.oracle.contrast import Contrast, has_alt
 from habench.types import AssocKey, Presence
 
 ALT_LEVEL = {"trait": {"v1": "v1_hyp_le_0.6"}, "occ": {"last_upsert": "first_upsert"}, "map": {"cm_gated": "cm_ungated"}}
@@ -36,8 +36,8 @@ class Inadmissible(ValueError):
 
 def realize(f: str, level: Level, variant: str) -> Level:
     """The core level that implements (level, variant) of factor f."""
-    if variant != "alt":
-        return level
+    if variant != "alt" or not has_alt(f, level):
+        return level  # levels without an `alt` variant behave as `std` (SPEC 4.3)
     if f in catalog.THRESHOLDS:
         return float(np.nextafter(float(level), 2.0))
     return ALT_LEVEL[f][level]
@@ -58,7 +58,10 @@ class Hybrids:
         *,
         levels: str = "executed",
         prep_evidence: Mapping[tuple[str, ...], Evidence] | None = None,
+        cache: dict | None = None,
     ) -> None:
+        """`cache`: an optional run cache shared by several `Hybrids` over the same evidence objects (runs are
+        keyed by evidence identity, space and realized config)."""
         if levels not in ("executed", "declared"):
             raise ValueError(levels)
         self.contrast = c = contrast
@@ -76,7 +79,7 @@ class Hybrids:
             self.base0 = c.d0.with_items(patch_items_0)
             self.base1 = c.d1.with_items(patch_items_1)
             self.D = self._declared_D()
-        self._cache: dict[tuple, RunResult] = {}
+        self._cache: dict[tuple, RunResult] = {} if cache is None else cache
         self.runs = 0  # distinct core runs executed
 
     def _declared_D(self) -> tuple[str, ...]:
@@ -126,7 +129,7 @@ class Hybrids:
             raise Inadmissible(sorted(S))
         cfg = self.config(S)
         pk = self.prep_key(S)
-        key = (cfg.items, pk)
+        key = (self._prep[pk], self.space.kind, cfg.items)  # Evidence hashes by identity and stays alive
         hit = self._cache.get(key)
         if hit is not None and (hit.trace is not None or not trace):
             return hit

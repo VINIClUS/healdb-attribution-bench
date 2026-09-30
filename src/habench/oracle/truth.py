@@ -367,7 +367,10 @@ def build_truth(
                 if not cs.u_needed(has_prep):
                     idents[(cs.view, cs.capability)] = Identification.singleton(q.family)
                 elif ident is not None:
-                    idents[(cs.view, cs.capability)] = ident(q, cs)
+                    try:
+                        idents[(cs.view, cs.capability)] = ident(q, cs)
+                    except NotImplementedError:
+                        pass  # the reference does not cover this cell yet: the cell stays out of the truth
         final.append(QueryTruth(q.qid, q.key, q.x0, q.x1, q.changed, q.family, q.complete, q.nonmonotone,
                                 q.table, idents))
     necessity: dict[Cell, int] = {}
