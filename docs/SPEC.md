@@ -933,6 +933,8 @@ Motivos padronizados de abstenção:
 
 ## 13. Plano de análise estatística (§11.3; R09, R15–R18, R27)
 
+R24 (origem do piloto de anotação) é do Q3 e fica fora deste SPEC (proposta ao lead δ).
+
 ### 13.1 Estimandos
 
 Todos na população de contrastes de teste da família indicada, com o mesmo método M:
@@ -940,7 +942,7 @@ Todos na população de contrastes de teste da família indicada, com o mesmo m�
 | hipótese | estimando | região | teste |
 |---|---|---|---|
 | H1a | `Δa = cob(L2-R) − cob(L2-M)` | R-A, `b = 64`; famílias F, M, O, X | não inferioridade a −0,02 |
-| H1b **[revisar]** | `Δb = cob(com evidência efetiva) − cob(sem ela)`, agregado sobre dois estratos pré-declarados da família I | divergência: L2-R × (L2-R − A3), em R-A; perda de replay: L2-M × L2-R, em R-C | superioridade (`Δb > 0`), com a guarda `risco(com) − risco(sem) ≤ +0,02` no limite superior de 95%. Se a guarda falha, H1b não é sustentada |
+| H1b (R17) **[revisar]** | `Δb = cob(com evidência efetiva) − cob(sem ela)`, agregado sobre dois estratos pré-declarados da família I | divergência: L2-R × (L2-R − A3), em R-A; perda de replay: L2-M × L2-R, em R-C | superioridade (`Δb > 0`), com a guarda `risco(com) − risco(sem) ≤ +0,02` no limite superior de 95%. Se a guarda falha, H1b não é sustentada |
 | H2 (R18) | composto: (i) fração de grupos nulos com falsa atribuição, L3 < L2 (superioridade); **e** (ii) `cob(L3) − cob(L2) > −0,02` (não inferioridade), na campanha pertinente | – | – |
 
 - Sem campanha de teste (`docs/decisoes.md`), H2 não é executada confirmatoriamente: entra no Holm com p = 1. O piloto
@@ -959,7 +961,7 @@ Todos na população de contrastes de teste da família indicada, com o mesmo m�
 - Na campanha real, a reamostragem também preserva os blocos temporais: os blocos são reamostrados dentro dos grupos.
   O procedimento é validado na calibração.
 
-**Valores-p:**
+**Valores-p (R16):**
 - não inferioridade: `p = (1 + #{b : Δ*_b ≤ −0,02}) / (B + 1)`;
 - superioridade: `p = (1 + #{b : Δ*_b ≤ 0}) / (B + 1)`.
 
