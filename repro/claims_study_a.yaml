@@ -23,16 +23,21 @@ premises_1_1:
       - "tests/test_pipeline_fidelity.py::test_md_equal_dump_all_columns_and_ids (43,194 rows, ids 1..43,194)"
     limits: >-
       Clean-room Python re-derivation of the code semantics, not an execution of the historical code.
-      The SQL replay of the unmodified 405a10c code is prepared (scripts/replay/) and pending (see P1c).
+      The execution of the unmodified 405a10c code is P1c.
   - id: P1c
     source: "F1 §3.3"
     claim: "Replaying the unmodified 405a10c code in MySQL 8.0.33 reproduces trait and md; entity differs by one 1-ULP value."
-    state: nao_determinado
+    state: rederivado_verificado
     evidence:
-      - "scripts/replay/README.md (commands); repro/replay_manifest.json once the main session runs Docker"
+      - "repro/replay_manifest.json: compare (entity 274,010, trait 469,957, md 43,194 rows; order and ids equal; one whitelisted entity value (560, C49.9) vl_score 2.0729831362586998e-07 vs 2.0729831362586995e-07, adjacent doubles; 0 unexplained)"
+      - "repro/replay_manifest.json: replay (driver 618.4 s, 0 Error lines), setup_operator_actions, failed_runs"
+      - "command: uv run python scripts/replay/write_manifest.py (after the Docker steps of scripts/replay/README.md)"
     limits: >-
-      The Python re-derivation finds 0 differences in entity (the dump text parsed by Python gives the stored
-      double), consistent with F1's explanation that the 1-ULP value appears only after a MySQL reload.
+      One successful run in a reconstructed environment (mysql:8.0.33, mysql-connector-python 26.7.0). Operator
+      actions outside the historical code: load hd_medication (FK parent) and TRUNCATE md before link. The first
+      run, without hd_medication, exported 0 rows because every entity insert failed on FK_MEDICATION_ACM2
+      (744,590 Error lines) and the historical code does not propagate the error; this is an environment finding,
+      fixed in 1c505b0. F1's cause for the 1-ULP value (MySQL reload of the JSON) is compatible but not isolated.
   - id: P2
     source: "protocol §1.1; F1 §§4.1, 4.5"
     claim: "Each preserved response carries the model version, RequestId and HTTP date: per-call provenance without run_id."
@@ -164,3 +169,16 @@ study_a_rederivations:
       re-derived pipeline. The historical V1->V2 transition also changed the submitted text and the ACM
       model; this contrast isolates only the post-processing on fixed responses and is not a causal account of
       the transition.
+  - id: A-d-xval
+    source: "lead-alpha brief α4; report §7.3"
+    claim: "On the V1-expressible sublattice, the core agrees with the patched historical link@405a10c on dev medications."
+    state: rederivado_verificado
+    evidence:
+      - "command: uv run python -m habench.historical.xval compare (writes replay/xval/xval_result.json; copied into repro/replay_manifest.json: xval)"
+      - "100 configurations, 1,082 dev medications, 1,863,659 md rows: natural key (id_medication, cd_icd_full) 100/100 agree, 0 keys only on either side, 0 other differences"
+      - "strict (ids, order, all columns) 0/100 equal; the 96,172 differing nm_trait_main rows are all equal-score ties"
+    limits: >-
+      link has no ORDER BY: in the reduced healdb_xval schema the entity read order differs from the PK order, so
+      md ids and nm_trait_main tie-breaks differ; the cause (likely a different query plan) is not determined.
+      Cells without a historical SQL oracle (sel top1, occ other than last_upsert, WHO map levels) are not covered
+      (docs/estudo_a/cobertura_oraculo_sql.md).
