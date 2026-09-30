@@ -1,3 +1,26 @@
+READY_FOR_DOCKER: run from the worktree root (/home/vinicius/code/hab-wt/alpha), in order, in one shell:
+
+```
+export HAB_MYSQL_PASSWORD='<throwaway password>'   # never a real credential; not written anywhere
+bash scripts/replay/up.sh                # ~1 min: container healdb-replay-mysql (mysql:8.0.33), volume
+                                         # healdb-replay-mysql-data, network healdb-replay-net; loads V1 api_response + ICD
+                                         # tables, entity/trait/md DDL only. Log: /home/vinicius/hab-data/replay/logs/up.log
+bash scripts/replay/replay_405a10c.sh    # ~12 min: healdb-replay-py (python:3.12-slim, mysql-connector-python==26.7.0)
+                                         # runs process_disease_data_json + (logged operator TRUNCATE) + link @405a10c,
+                                         # unmodified. Exports /home/vinicius/hab-data/replay/export/{entity,trait,md}.tsv
+                                         # + export_meta.json; log replay_405a10c.log, pip_freeze.txt, blobs.txt
+bash scripts/replay/xval.sh              # ~36 min: 100 patched link@405a10c configs on dev medications only (schema
+                                         # healdb_xval); md per config in /home/vinicius/hab-data/replay/xval/<cfg_id>.tsv;
+                                         # log logs/xval.log
+bash scripts/replay/down.sh              # removes only healdb-replay-* containers/volume/network (outputs are kept)
+```
+
+Expected: `replay_405a10c.sh` prints `driver rc=0`; entity 274,010, trait 469,957, md 43,194 rows in export_meta.json.
+Send back: "done" (everything stays under /home/vinicius/hab-data/replay/). Afterwards the lead runs
+`uv run python -m habench.historical.xval compare`, writes `repro/replay_manifest.json` with
+`habench.historical.replay.write_replay_manifest` and updates claim P1c and report §7. Not pre-checked here:
+`bash -n` (not permitted in lead sessions), the connector pin install, and MySQL 8 auth from the connector.
+
 GATE1: passed
 
 ```
@@ -51,7 +74,9 @@ GATE 1 aprovado; α3 concluído; α4 concluído exceto a execução Docker (scri
 
 ## Em andamento
 
-- α4: scripts `scripts/replay/` e `historical/xval.py` (worker); depois READY_FOR_DOCKER.
+- α4: scripts `scripts/replay/` e `historical/xval.py` prontos (READY_FOR_DOCKER no topo). `xval prepare` testado
+  offline: 100 fontes patchadas compilam, 1.082 medicamentos de dev. Tabela de cobertura do oráculo SQL em
+  `docs/estudo_a/cobertura_oraculo_sql.md`.
 
 ## Próximo
 
