@@ -68,6 +68,51 @@ class TraceRecord:
     failed: frozenset[str]  # subset of {trait, ent_thr, icd_thr, map}
 
 
+class PresenceMap(Mapping[AssocKey, Presence]):
+    """Presence of a whole run (§1.4): iterates the PRESENT keys; every key of an unavailable med is UNAVAILABLE;
+    any other key is missing, i.e. ABSENT through `presence()`."""
+
+    __slots__ = ("present", "unavailable")
+
+    def __init__(self, present: Iterable[AssocKey] = (), unavailable: Iterable[int] = ()) -> None:
+        self.present = frozenset(present)
+        self.unavailable = frozenset(unavailable)
+
+    def __getitem__(self, key: AssocKey) -> Presence:
+        if key.med in self.unavailable:
+            return Presence.UNAVAILABLE
+        if key in self.present:
+            return Presence.PRESENT
+        raise KeyError(key)
+
+    def __iter__(self):
+        return iter(sorted(self.present))
+
+    def __len__(self) -> int:
+        return len(self.present)
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, PresenceMap):
+            return self.present == other.present and self.unavailable == other.unavailable
+        return NotImplemented
+
+    def __hash__(self) -> int:
+        return hash((self.present, self.unavailable))
+
+    def __repr__(self) -> str:
+        return f"PresenceMap({len(self.present)} present, unavailable meds {sorted(self.unavailable)})"
+
+    def to_json(self) -> dict:
+        return {
+            "present": [[k.med, k.system, k.version, k.code] for k in sorted(self.present)],
+            "unavailable": sorted(self.unavailable),
+        }
+
+    @classmethod
+    def from_json(cls, obj: Mapping) -> PresenceMap:
+        return cls((AssocKey(*k) for k in obj["present"]), obj["unavailable"])
+
+
 @dataclass(frozen=True, slots=True)
 class EvalResult:
     presence: Mapping[AssocKey, Presence]  # whole group, in the contrast space
@@ -145,6 +190,9 @@ def presence(m: Mapping[AssocKey, Presence], key: AssocKey) -> Presence:
 
 def same_presence(a: Mapping[AssocKey, Presence], b: Mapping[AssocKey, Presence]) -> bool:
     """Decision-level equality (§2, level 3), ignoring explicit ABSENT entries."""
+
+    if isinstance(a, PresenceMap) and isinstance(b, PresenceMap):
+        return a == b
 
     def norm(m: Mapping[AssocKey, Presence]) -> dict[AssocKey, Presence]:
         return {k: v for k, v in m.items() if v != Presence.ABSENT}
