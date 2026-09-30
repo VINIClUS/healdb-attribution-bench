@@ -295,9 +295,36 @@ class ExpansionResult:
     cut: str = ""
 
 
-def l1_observation(D: tuple, table: tuple) -> tuple:
+def l1_observation(b: Bundle, D: tuple, table: tuple) -> tuple:
     """L1 × R-C marginal observation: finals (hashes are equal in unpatched contrasts)."""
     return (table[0], table[-1])
+
+
+def top1_view(entities: Sequence[dict], hier: Hierarchy, space: str, key_code: str, alpha: Alphabet) -> tuple:
+    """What a top-1-only view (A2) shows of a's candidates, in symbol space: for each entity whose top concept
+    reaches the key, (es band, trait behaviour, cs band, code behaviour). Entities whose top concept is not an
+    `a` code hide their `a` concepts."""
+    out = []
+    for e in entities:
+        cons = sorted(_concepts(e), key=lambda c: -c["Score"])
+        if not cons:
+            continue
+        top = cons[0]
+        beh = code_behavior(hier, space, key_code, alpha.maps, top["Code"])
+        if not any(beh):
+            continue
+        traits = {t["Name"]: t.get("Score") or 0.0 for t in e.get("Traits") or []}
+        tsig = tuple(_trait_rule_pass(lv, traits, e.get("Type") or "") for lv in alpha.trait_levels)
+        out.append((_band_rep(e.get("Score") or 0.0, alpha.es_cuts, alpha.es), tsig,
+                    _band_rep(top["Score"], alpha.cs_cuts, alpha.cs), beh))
+    return tuple(out)
+
+
+def top1_observer(hier: Hierarchy, space: str, key_code: str, alpha: Alphabet):
+    def observe(b: Bundle, D: tuple, table: tuple) -> tuple:
+        return (table[0], table[-1], top1_view(bundle_entities(b), hier, space, key_code, alpha))
+
+    return observe
 
 
 def expand(
@@ -330,7 +357,7 @@ def expand(
             if time.perf_counter() - t0 > time_budget:
                 return ExpansionResult(classes, False, levels, f"time budget at L={k}")
             for i, (b, (D, tab)) in enumerate(zip(cand, ev.tables(cand, h))):
-                cls = (D, tab, observe(D, tab))
+                cls = (D, tab, observe(b, D, tab))
                 joint[i].append(cls)
                 if cls not in classes:
                     classes[cls] = (b, h)

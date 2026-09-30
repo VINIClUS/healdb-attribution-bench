@@ -66,9 +66,11 @@ def test_l1_expansion_on_ex12(ex12):
 def test_unsupported_cells_stay_out(ex12):
     c, ev = ex12
     key = AssocKey(MED, SYSTEM_ICD10_WHO, HIER.version, "C61")
+    cells = [CellSpec.of("L2-R-A2", "R-C"), CellSpec.of("L2-M-A2", "R-C")]
     t = build_truth(Hybrids(c, ev, HIER), [("q", key)], partition="dev", scenario_family="I",
-                    cells=[CellSpec.of("L2-R-A2", "R-C")], ident=ident_fn(c, ev, HIER, UniverseCache(L=1, max_dev=0)))
+                    cells=cells, ident=ident_fn(c, ev, HIER, UniverseCache(L=2, max_dev=0)))
+    assert t.query("q").cell("L2-R-A2", "R-C") in ("identificado", "ambiguo", "indeterminado")
     with pytest.raises(KeyError):
-        t.query("q").cell("L2-R-A2", "R-C")
+        t.query("q").cell("L2-M-A2", "R-C")  # trace over expanded bundles is not covered
     with pytest.raises(NotImplementedError):
-        identify_query(c, ev, HIER, t.query("q"), CellSpec.of("L2-R-A2", "R-C"), cache=UniverseCache())
+        identify_query(c, ev, HIER, t.query("q"), CellSpec.of("L2-M-A2", "R-C"), cache=UniverseCache())
