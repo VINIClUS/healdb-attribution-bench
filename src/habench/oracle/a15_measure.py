@@ -62,6 +62,8 @@ def main(argv: list[str] | None = None) -> int:
         t = build_truth(h, [(f"q{i}", k) for i, k in enumerate(pick)], partition="dev", scenario_family="X",
                         cells=cells, ident=ident_fn(c, ev, hier, cache))
         dt = time.perf_counter() - tq
+        print(json.dumps({"group": gid, "meds": len(meds), "keys": len(keys), "changed": len(changed),
+                          "queries": len(pick), "seconds": round(dt, 1), "expansions": len(cache.stats)}), flush=True)
         for q in t.queries:
             row = {"group": gid, "code": q.key.code, "complete": q.complete, "seconds_contrast": round(dt, 2)}
             for (v, cap), i in q.ident.items():
