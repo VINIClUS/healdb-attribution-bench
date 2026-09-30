@@ -38,8 +38,8 @@ class ParquetTextSource:
     """Reads only the requested medication ids from the V2 snapshot parquet files, lazily, with a cache."""
 
     def __init__(self, snapshots_dir: Path) -> None:
-        self._submitted_path = snapshots_dir / "v2" / "api_response.parquet"
-        self._pt_path = snapshots_dir / "v2" / "translate_eng_leaflet_section.parquet"
+        self._submitted_path = snapshots_dir / "v2" / "hd_int_med_disease_api_response.parquet"
+        self._pt_path = snapshots_dir / "v2" / "hd_translate_eng_leaflet_section.parquet"
         self._cache: dict[tuple[str, int], str | None] = {}
 
     def submitted_text(self, med: int) -> str | None:

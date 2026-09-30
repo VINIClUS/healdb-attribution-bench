@@ -38,3 +38,50 @@ Cada entrada tem data, quem decidiu e o motivo. Decisões do usuário são citad
 - **Tradutor histórico indisponível.** O tradutor histórico (OpenAI, GPT-3.5 segundo a documentação) não é reproduzível: não há chave OpenAI e o modelo foi descontinuado.
   - A campanha mede a variabilidade de tradutores atuais. Não recupera traduções históricas, o que o §9.1 não exige.
   - O prompt histórico e o corte de 6000 caracteres são mantidos.
+
+## 2026-09-30 — GATE 2: SPEC v0.1 (sessão principal)
+
+**Veredito da auditoria.** O auditor Opus independente deu "aprovar com correções", com 3 achados bloqueantes, 13 importantes e 5 menores (`docs/auditorias/gate2_spec.md`). Aceito o veredito.
+
+O SPEC é aprovado **na condição de v0.2**: o lead β aplica as correções abaixo, e a sessão principal reconfere as seções alteradas com a suíte verde antes do β3 e do lead γ.
+
+**Aplicar antes do β3 e do γ.** Achados A01, A02, A03, A09, A13 e A14, mais todas as correções que mudam o texto do SPEC: A04, A05, A06, A07, A08, A10, A11, A12, A18, A20 e A21.
+- Os achados de P4 que também mudam o SPEC entram agora, para que o γ implemente a semântica final.
+- Ficam para a β3: as medições de A15 e os testes diferenciais de A19.
+
+**Decisões sobre os itens [revisar] do lead β:**
+1. **H1a (R09, A05).**
+   - O orçamento primário passa a `b = 16`; os orçamentos 32 e 64 ficam secundários.
+   - Em L2-R, valem certificados `trace` derivados dos traços devolvidos por avaliações pagas (constam do log).
+   - Um `Δ*` de variância zero é relatado como "identidade por construção", nunca como evidência de não inferioridade.
+   - A parte de armazenamento de H1a tem um critério descritivo pré-declarado: razão de bytes deduplicados L2-R/L2-M, com IC, e tempo de reconstrução.
+2. **H1b (R17, A06).** Aceito o agregado de dois estratos, com as definições de A06:
+   - denominador comum aos dois braços;
+   - estimador de razão conjunto por consulta;
+   - guarda de risco no percentil 97,5;
+   - regra para reamostras sem categóricas;
+   - A1 fora dos estratos.
+3. **Modelo de variantes K (§4.3, A07).** Aceito como decisão de modelagem, com três condições:
+   - cada hipótese de K cita F1;
+   - H1b é relatada também com `K = ∅`, como sensibilidade pré-declarada;
+   - parte das execuções novas da família I realiza a variante `alt`.
+4. **Cobertura primária só sobre alteradas (R13, A18).** Aceita, com a justificativa escrita no SPEC. Não vale na campanha.
+
+**Outras decisões:**
+- **Risco seletivo (A04).** Para a calibração a 5% e para a guarda de H1b, usa-se o risco sobre categóricas comprometidas (sem `nao_comprometido`). O risco literal de §11.1 também é relatado.
+- **α dos limites de evento zero (A08).** α = 0,025 unilateral, coerente com as inferências primárias. O dimensionamento usa o nível do pior caso de Holm, e `p_H2 = max(p_i, p_ii)`.
+- **`top1` dentro de um grupo de `Id` (A02).** O normativo é o comportamento de `pipeline/core.py`, que reproduz as tabelas V2 com 0 diferenças. O SPEC o descreve citando o código. Onde os dados V2 não fixam o caso (empates), vale o comportamento do núcleo. O lead α adapta `pipeline/semantics.dummy` às regras corrigidas, com um teste de solidez por propriedade.
+- **Exemplo público de §7.2 (X(iii), A12).** Fica restrito a dev/cal e nunca entra em teste.
+
+## 2026-09-30 — GATE 2: SPEC v0.2 aprovado (sessão principal)
+
+A sessão principal reconferiu as seções alteradas:
+- a seção 16 (changelog);
+- 8.3, com a partição dos estados provada e EX-24;
+- 9.2, com o passo 0, a tabela de aceitação e EX-21 (e)–(h);
+- 6.3, com a completude da BFS; EX-28 foi recalculado à mão.
+
+A suíte está verde no commit `188123a` do lead β: `tests/test_spec_examples.py` com 86 testes e o total com 512.
+
+O SPEC v0.2 é o documento normativo da onda 2 (β3 e γ). Correções posteriores entram como v0.2.x, com changelog, e só por decisão registrada aqui.
+- **Adendo.** O commit `0c90992` do lead β (EX-29, a ordem de saída de `top1`; EX-30, a condição de ordem da regra dummy 2) chegou depois da reconferência. Foi revisado e EX-29 recalculado à mão. A mudança só torna a regra 2 mais conservadora. Fica incluído na v0.2 aprovada (merge `d8bb90f`).

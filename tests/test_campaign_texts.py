@@ -18,9 +18,9 @@ def _write(tmp_path: Path) -> Path:
     v2 = tmp_path / "v2"
     v2.mkdir()
     pq.write_table(pa.table({"id_medication": [1, 2, 3], "ds_text_submitted": ["  a \n", None, "c"],
-                             "other": [0, 0, 0]}), v2 / "api_response.parquet")
+                             "other": [0, 0, 0]}), v2 / "hd_int_med_disease_api_response.parquet")
     pq.write_table(pa.table({"id_medication": [1, 3], "ds_indication": [" pt ", "ç"]}),
-                   v2 / "translate_eng_leaflet_section.parquet")
+                   v2 / "hd_translate_eng_leaflet_section.parquet")
     return tmp_path
 
 
@@ -44,7 +44,7 @@ def test_parquet_source_rejects_conflicting_duplicates(tmp_path: Path) -> None:
     v2 = tmp_path / "v2"
     v2.mkdir()
     pq.write_table(pa.table({"id_medication": [1, 1], "ds_text_submitted": ["a", "b"]}),
-                   v2 / "api_response.parquet")
+                   v2 / "hd_int_med_disease_api_response.parquet")
     with pytest.raises(ValueError):
         ParquetTextSource(tmp_path).submitted_text(1)
 
@@ -52,3 +52,14 @@ def test_parquet_source_rejects_conflicting_duplicates(tmp_path: Path) -> None:
 def test_default_snapshots_dir(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("HAB_DATA_DIR", "/x")
     assert default_snapshots_dir() == Path("/x/snapshots")
+
+
+@pytest.mark.dumps
+def test_parquet_source_reads_real_v2_snapshot():
+    """The file names match the snapshots written by habench.data.store (lead α)."""
+    source = ParquetTextSource(default_snapshots_dir())
+    rows = pq.read_table(default_snapshots_dir() / "v2" / "hd_int_med_disease_api_response.parquet",
+                         columns=["id_medication", "ds_text_submitted"]).slice(0, 1).to_pylist()
+    med = rows[0]["id_medication"]
+    assert source.submitted_text(med) == rows[0]["ds_text_submitted"]
+    assert source.pt_indication(med) is None or isinstance(source.pt_indication(med), str)
