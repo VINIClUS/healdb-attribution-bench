@@ -1276,7 +1276,7 @@ Uma linha por achado de `docs/auditorias/gate2_spec.md`. Onde a decisão da sess
 | A06 | H1b: denominador comum aos dois braços, `|Q_ind|` por braço, sensibilidade com `indeterminado` não coberto, estimador conjunto por consulta, guarda no percentil 97,5, braço sem categóricas com risco 0, A1 fora dos estratos | 13.1 |
 | A07 | K registrado como decisão, com citação de F1 por hipótese; sensibilidade `K = ∅`; parte das execuções da família I realiza `alt` | 4.3, 13.1 |
 | A08 | α = 0,025 nos limites de evento zero (EX-19 recalculado); dimensionamento a `1 − 0,025/3`; `p_H2 = max(p_i, p_ii)` | 13.1, 13.4, 13.6 |
-| A09 | `unmapped` não gera chave; a chave que deixa de ser produzida fica `ABSENT`; EX-27 | 1.2, 1.4, EX-27 |
+| A09 | `unmapped` só para registro aprovado sem chave (`cm_ungated` no espaço OMS); nos níveis `who_*` o código sem projeção reprova em `map` (núcleo); `unmapped` não gera chave; a chave que deixa de ser produzida fica `ABSENT`; EX-27 | 1.2, 1.4, EX-27 |
 | A10 | desfechos secundários de score, entity_score, classe e granularidade definidos; `low_conf_thr` e `icd_hi` só aí | 2.1 |
 | A11 | A6 redefinida como `trace_winners` (só os vencedores de `top1` no traço) | 7.2 |
 | A12 | X(iii) só em dev/cal | 12 |
