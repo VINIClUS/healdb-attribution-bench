@@ -5,8 +5,10 @@ import json
 import random
 
 import pytest
+from hypothesis import HealthCheck, given, settings
+from hypothesis import strategies as st
 
-from habench.pipeline import core, semantics
+from habench.pipeline import catalog, core, semantics
 from habench.pipeline.catalog import V1, V2, Config, hybrid
 from habench.pipeline.evidence import Evidence, JsonEdit, Patch
 from habench.pipeline.mapping import Hierarchy
@@ -116,6 +118,89 @@ def test_dummy_sound_random_corpora(seed):
                     "map": rng.choice(["who_exact_fb", "who_cat3", "who_exact"])})
     _check_sound(ev, HIER, V1, x1)
     _check_sound(ev, HIER, V1, V1.with_(map="cm_ungated", ent_thr=0.55), core.CM)
+
+
+# ---- property: soundness against brute force, duplicate Ids and ties (SPEC 4.6) ------------------------
+
+_CODES = ("A01", "A01.1", "B02", "C99.1")  # few codes: the same code often wins in two Id groups (EX-29)
+_SCORES = (0.3, 0.55, 0.6, 0.65, 0.7, 0.9)  # on and around every catalogued threshold, with ties
+_TRAITS = st.sampled_from([
+    ("DIAGNOSIS", 0.8), ("SIGN", 0.6), ("SYMPTOM", 0.9), ("NEGATION", 0.7), ("LOW_CONFIDENCE", 0.5),
+    ("PERTAINS_TO_FAMILY", 0.7), ("HYPOTHETICAL", 0.55), ("HYPOTHETICAL", 0.62), ("HYPOTHETICAL", 0.7),
+])
+_ENTITY = st.builds(
+    lambda eid, es, concepts, traits, tp: _entity(eid, es, concepts, traits, tp),
+    st.integers(1, 2),  # two Ids for up to four entities: duplicate Ids are frequent
+    st.sampled_from(_SCORES),
+    st.lists(st.tuples(st.sampled_from(_CODES), st.sampled_from(_SCORES)), max_size=3),
+    st.lists(_TRAITS, max_size=3),
+    st.sampled_from(["DX_NAME", "DX_NAME", "TIME_TO_DX_NAME"]),
+)
+_CM_MAPS = ("cm_gated", "cm_ungated")
+
+
+@st.composite
+def _contrast(draw, fixed=None):
+    """(x0, x1, space): each post factor draws its two levels independently, so |D| ranges over 0..6.
+    `fixed` maps factors to a forced (x0, x1) pair of levels."""
+    space = draw(st.sampled_from([core.CM, core.WHO]))
+    maps = _CM_MAPS if space == core.CM else tuple(catalog.MAP_LEVELS)
+    levels = {f: catalog.FACTORS[f].levels for f in catalog.POST_FACTORS} | {"map": maps}
+    x0, x1 = ({f: draw(st.sampled_from(levels[f])) for f in catalog.POST_FACTORS} for _ in range(2))
+    for f, (l0, l1) in (fixed or {}).items():
+        x0[f], x1[f] = l0, l1
+    return Config.of(x0), Config.of(x1), space
+
+
+_MEDS = st.lists(st.lists(_ENTITY, min_size=1, max_size=4), min_size=1, max_size=2)
+_PROPERTY = settings(max_examples=300, deadline=None, suppress_health_check=[HealthCheck.too_slow])
+
+
+def _sound(meds, contrast):
+    x0, x1, space = contrast
+    ev = Evidence.from_responses([(m, _response(*ents)) for m, ents in enumerate(meds, 1)])
+    _check_sound(ev, HIER, x0, x1, space)
+
+
+@_PROPERTY
+@given(meds=_MEDS, contrast=_contrast())
+def test_dummy_sound_property(meds, contrast):
+    _sound(meds, contrast)
+
+
+_SEL_ENTITY = st.builds(  # traits that pass every rule, few codes: presence turns on scores and order
+    lambda eid, es, concepts: _entity(eid, es, concepts, [("DIAGNOSIS", 0.9)]),
+    st.integers(1, 2),
+    st.sampled_from(_SCORES),
+    st.lists(st.tuples(st.sampled_from(("A01", "B02")), st.sampled_from(_SCORES)), min_size=1, max_size=2),
+)
+
+
+@settings(max_examples=500, deadline=None, suppress_health_check=[HealthCheck.too_slow])
+@given(
+    meds=st.lists(st.lists(_SEL_ENTITY, min_size=3, max_size=4), min_size=1, max_size=1),
+    contrast=_contrast(fixed={"sel": ("all", "top1"), "occ": ("last_upsert", "last_upsert"), "map": ("cm_gated", "cm_gated")}),
+)
+def test_dummy_sound_property_sel_under_upsert(meds, contrast):
+    """Rule 2 with duplicate Ids: the top1 output order can reverse a code's candidates (EX-29/EX-30)."""
+    _sound(meds, contrast)
+
+
+def test_ex30_sel_order_condition():
+    """SPEC EX-29/EX-30: both C61 candidates survive top1 but in reverse order; `sel` is not a dummy."""
+    ev = Evidence.from_responses([(1, _response(
+        _entity(2, 0.90, [("R50.9", 0.50)], [("DIAGNOSIS", 0.9)]),
+        _entity(1, 0.90, [("C61", 0.90)], [("DIAGNOSIS", 0.9)]),
+        _entity(2, 0.50, [("C61", 0.95)], [("DIAGNOSIS", 0.9)]),
+    ))])
+    hier = Hierarchy.from_rows(
+        [{"cd_cat": "C61", "id_cat": 1, "id_group": 1}, {"cd_cat": "R50", "id_cat": 2, "id_group": 1}],
+        [{"cd_subcat": "R509", "id_subcat": 10, "id_cat": 2}],
+    )
+    x1 = V1.with_(sel="top1")
+    a = next(iter(core.run(x1, ev, hier, core.CM).present))
+    assert a.code == "C61" and not core.run(V1, ev, hier, core.CM).present
+    assert semantics.dummy("sel", a, V1, x1, ev, hier, core.CM) is None
 
 
 @pytest.mark.dumps

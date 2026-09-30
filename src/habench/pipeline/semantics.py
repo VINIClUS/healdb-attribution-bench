@@ -53,6 +53,20 @@ def _relevant(ev: Evidence, hier: Hierarchy, levels: set[str], space: KeySpace, 
     ]
 
 
+def _same_order_per_code(ev: Evidence, rel: list[int], kept: list[int]) -> bool:
+    """Per code, the relevant candidates appear in the same relative order in emission and in `kept` (EX-30)."""
+    rs = set(rel)
+
+    def per_code(seq) -> dict[int, list[int]]:
+        out: dict[int, list[int]] = {}
+        for c in seq:
+            if c in rs:
+                out.setdefault(int(ev.c_code[c]), []).append(c)
+        return out
+
+    return per_code(range(len(ev.c_med))) == per_code(kept)
+
+
 def _rule_verdict(rule: TraitRule, names: set[str], hyp: float | None, has_hyp: bool, tp: str) -> bool:
     if rule.veto & names:
         return False
@@ -124,8 +138,8 @@ def dummy(
                 if _reaches(v, hier, l0, space, ci, a.code) != _reaches(v, hier, l1, space, ci, a.code):
                     return None
         elif f == "sel":
-            top = set(core._select(v, "top1"))
-            if any(c not in top for c in rel):
+            top = core._select(v, "top1")
+            if any(c not in set(top) for c in rel) or not _same_order_per_code(v, rel, top):
                 return None
         elif f == "occ":
             codes = [int(v.c_code[c]) for c in rel]
@@ -135,6 +149,9 @@ def dummy(
             if len(eids) != len(set(eids)) or any(
                 sum(1 for e in range(len(v.e_med)) if int(v.e_eid[e]) == eid) > 1 for eid in eids
             ):
+                return None
+            # a trait name repeated inside the entity with other scores: first_upsert keeps the first score
+            if any(len(dict(v.e_traits[v.c_ent[c]])) != len(set(v.e_traits[v.c_ent[c]])) for c in rel):
                 return None
         elif f == "trait":
             if _trait_equal(v, rel, str(x0["trait"]), str(x1["trait"])) is None:
