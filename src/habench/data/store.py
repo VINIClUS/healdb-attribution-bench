@@ -43,7 +43,7 @@ SNAPSHOT_TABLES: dict[str, tuple[str, ...]] = {
         "hd_int_med_disease_cutoff_audit",
         "hd_medication_disease",
     ),
-    "g0327": ("hd_int_med_disease_api_response",),
+    "g0327": ("hd_int_med_disease_api_response", "hd_translate_eng_leaflet_section"),
 }
 SNAPSHOT_SOURCE = {"v1": "V1", "v2": "V2", "g0327": "G0327"}
 
