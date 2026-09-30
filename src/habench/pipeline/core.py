@@ -96,7 +96,8 @@ def _entity_eid(ev: Evidence) -> np.ndarray:
 
 
 def _select(ev: Evidence, sel: str) -> list[int]:
-    """Candidate ids kept by `sel`, in emission order."""
+    """Candidate ids kept by `sel`: emission order for `all`; for `top1`, one winner per Id group in the order of
+    the group's first candidate (not emission order, SPEC 3.2 step 3, EX-29)."""
     n = len(ev.c_med)
     if sel == "all":
         return list(range(n))
