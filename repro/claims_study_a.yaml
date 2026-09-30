@@ -1,0 +1,166 @@
+# Study A claims ledger (protocol §1.1, §6.5). One entry per premise or key F1/F2 claim.
+# state: armazenado | rederivado_verificado | inferido_compativel | refutado | nao_determinado
+# "rederivado_verificado" here means re-derived by committed code in this repository and compared
+# exactly with the stored artifact; the historical SQL replay (Docker) is tracked separately.
+# Evidence pointers are repository paths (tests, generated aggregates) or snapshot tables.
+
+premises_1_1:
+  - id: P1a
+    source: "protocol §1.1; F1 §§3.3, 5"
+    claim: "V1 keeps the translation and the complete ACM responses."
+    state: armazenado
+    evidence:
+      - "repro/sources_manifest.json (dump sha256, REDU md5)"
+      - "tests/test_data_store.py::test_real_row_counts (translate 7,473 rows; api_response 7,447 rows)"
+      - "docs/estudo_a/texto_v1.json: call_metadata.v1 (7,447/7,447 with ModelVersion, RequestId, HTTP date)"
+    limits: "Raw bytes are MySQL's re-serialization of the JSON column as dumped, not the bytes ACM sent."
+  - id: P1b
+    source: "protocol §1.1; F1 §3.3"
+    claim: "entity, trait and md are re-derivable from the stored responses by the public 405a10c code."
+    state: rederivado_verificado
+    evidence:
+      - "tests/test_pipeline_tables_v1.py::test_v1_tables_equal_dump (entity 274,010, trait 469,957: 0 differences, order equal)"
+      - "tests/test_pipeline_fidelity.py::test_md_equal_dump_all_columns_and_ids (43,194 rows, ids 1..43,194)"
+    limits: >-
+      Clean-room Python re-derivation of the code semantics, not an execution of the historical code.
+      The SQL replay of the unmodified 405a10c code is prepared (scripts/replay/) and pending (see P1c).
+  - id: P1c
+    source: "F1 §3.3"
+    claim: "Replaying the unmodified 405a10c code in MySQL 8.0.33 reproduces trait and md; entity differs by one 1-ULP value."
+    state: nao_determinado
+    evidence:
+      - "scripts/replay/README.md (commands); repro/replay_manifest.json once the main session runs Docker"
+    limits: >-
+      The Python re-derivation finds 0 differences in entity (the dump text parsed by Python gives the stored
+      double), consistent with F1's explanation that the 1-ULP value appears only after a MySQL reload.
+  - id: P2
+    source: "protocol §1.1; F1 §§4.1, 4.5"
+    claim: "Each preserved response carries the model version, RequestId and HTTP date: per-call provenance without run_id."
+    state: armazenado
+    evidence:
+      - "docs/estudo_a/texto_v1.json: call_metadata (V1, V2, 2024: 7,447/7,447 each; distinct RequestIds 7,447; 0 shared between runs)"
+  - id: P3
+    source: "protocol §1.1; F1 §§4.2-4.4"
+    claim: "The V1 text reconstruction agrees with every positioned span but covers only 36.95% of the characters."
+    state: inferido_compativel
+    evidence:
+      - "docs/estudo_a/texto_v1.json: v1.hypotheses.v1_reconstructed (7,189/7,189 responses, 235,557/235,557 spans, coverage 0.369501)"
+      - "alternatives refuted: raw indication 0 responses (78 spans), indication only 8 responses (118,871 spans)"
+      - "tests/test_historical_text_v1.py::test_committed_results_match_f1"
+    limits: "258 responses without entities are unverified; header H and the separator are checked only by length."
+  - id: P4
+    source: "protocol §1.1; F1 §§4.5-4.6"
+    claim: "V1 and V2 differ in the submitted text and in the ACM version."
+    state: rederivado_verificado
+    evidence:
+      - "docs/estudo_a/texto_v1.json: model_versions (V1 3.0.0.20231001, V2 3.2.0.20251001, 2024 2.7.0.20231001)"
+      - "v2.submitted_equal_to_v1_reconstruction = 0 of 7,447"
+    limits: >-
+      The version difference is stored; the text difference compares the stored V2 text with the V1
+      reconstruction (P3), so it inherits P3's limits.
+  - id: P5
+    source: "protocol §1.1; F1 §2.4"
+    claim: "The extend rule was fitted to the data; reproducing the table does not identify the original program."
+    state: inferido_compativel
+    evidence:
+      - "tests/test_pipeline_fidelity.py::test_extend_equal_dump_inferred_rule (44,233 rows, ids 23,302..67,534)"
+      - "src/habench/pipeline/mapping.py::extend_ids and tables_v1.EXTEND_FIRST_ID (documented as fitted)"
+  - id: P6
+    source: "protocol §1.1; F2 §1"
+    claim: "Version 2 of the REDU deposit keeps the version 1 files."
+    state: armazenado
+    evidence:
+      - "repro/sources_manifest.json: redu.files (the 4 V1 files listed in dataset versions 1 and 2; 9/9 md5 recomputed and equal)"
+    limits: "Dataset-version membership comes from the recorded REDU API output (out/redu_versions.json); no new API call was made."
+
+f1_f2_claims:
+  - id: F1-2.3
+    claim: "Funnel entity -> md: 274,010 -> 265,587 -> 259,198 -> 171,713 -> 43,194 -> 43,194; extend without the gate: 267,392 -> 177,839 -> 44,233."
+    state: rederivado_verificado
+    evidence: ["tests/test_pipeline_fidelity.py::test_v1_funnel", "tests/test_pipeline_fidelity.py::test_extend_equal_dump_inferred_rule"]
+  - id: F1-2.5
+    claim: "extend ids are 23,301 + rank; 23,301 equals the pairs whose dotless code exists exactly in the hierarchy, suggesting an earlier strict load deleted with DELETE."
+    state: inferido_compativel
+    evidence: ["docs/estudo_a/texto_v1.json: v1_md_code_system.nodot_exact_in_hierarchy = 23,301"]
+    limits: "The count matches; the deleted rows do not exist, so the earlier load stays a hypothesis."
+  - id: F1-3.3-order
+    claim: "md ids follow the entity primary-key order (no ORDER BY in link)."
+    state: rederivado_verificado
+    evidence: ["tests/test_pipeline_fidelity.py::test_md_equal_dump_all_columns_and_ids"]
+  - id: F1-4.5
+    claim: "V1 responses fall into three phases on 2025-05-29 (7,427 / 18 / 2); the 20 texts over 10,000 characters are those of phases 2 and 3."
+    state: rederivado_verificado
+    evidence: ["docs/estudo_a/texto_v1.json: v1.phases, v1.texts_over_10000_chars"]
+  - id: F1-4.5-reading
+    claim: "Phase 1 ran without the cut, long texts failed silently and were resent with the cut."
+    state: nao_determinado
+    limits: "Failed calls leave no record."
+  - id: F1-4.6-phases
+    claim: "V2 responses fall into phases A (7,016) and B (431)."
+    state: rederivado_verificado
+    evidence: ["docs/estudo_a/texto_v1.json: v2.phases"]
+  - id: F1-4.6-backspace
+    claim: "The committed V2 SQL's '\\b' is a backspace, so the <drug> substitution never matches; the main V2 run used uncommitted SQL."
+    state: nao_determinado
+    limits: "Needs MySQL REGEXP_REPLACE; not re-executed in this package."
+  - id: F1-4.7
+    claim: "ds_indication_eng is identical in 0327 and V1 for 7,471 of 7,473 medications (exceptions 3205, 4139)."
+    state: rederivado_verificado
+    evidence: ["docs/estudo_a/texto_v1.json: translation_0327_vs_v1"]
+  - id: F1-6.2
+    claim: "The HYPOTHETICAL rule executed in V1 is the code's veto above 0.65, not the documented acceptance at <= 0.6."
+    state: rederivado_verificado
+    evidence:
+      - "tests/test_pipeline_fidelity.py::test_documented_hypothetical_rule_does_not_reproduce_md (documented rule: 39,319 keys, 3,875 V1 md keys lost)"
+    limits: "The documented rule is refuted as the executed rule for md; the code rule reproduces md exactly."
+  - id: F2-6-code-system
+    claim: "V1 md stores dotted ICD-10-CM (38,132 of 43,194 codes dotted; 53.9% exist exactly in the ICD-10 hierarchy); V2 md stores dotless WHO ICD-10."
+    state: rederivado_verificado
+    evidence:
+      - "docs/estudo_a/texto_v1.json: v1_md_code_system (38,132 dotted; 23,301 exact = 53.9%)"
+      - "tests/test_pipeline_tables_v2.py::test_core_v2_preset_agrees_with_md (27,861 WHO keys)"
+  - id: F2-6-v2-tables
+    claim: "V2 entity_icd (375,595), entity_trait (107,543), cutoff_audit (75,119) and md (27,861) derive from the V2 responses by the HEAD code."
+    state: rederivado_verificado
+    evidence: ["tests/test_pipeline_tables_v2.py (all columns, order, ids; 0 GROUP_CONCAT ties)"]
+  - id: F2-1-bytes
+    claim: "The V1 dumps are byte-identical to the 0605 OpenSource dumps except the '-- Dump completed on' line."
+    state: rederivado_verificado
+    evidence:
+      - "docs/estudo_a/dumps_v1_0605.json (33 files in common: 33 equal without the stamp line, 0 raw-equal)"
+      - "tests/test_historical_dumps_identity.py::test_v1_equals_0605_except_stamp"
+    limits: "Compares the extracted .sql files; the compressed archives are not compared (F2 reference note)."
+
+study_a_rederivations:
+  - id: A-a-repeatability
+    source: "design §0 draft; protocol §§5.2, 9.5"
+    claim: "Inside one ACM run, identical submitted texts receive level-2-identical responses."
+    state: rederivado_verificado
+    evidence:
+      - "docs/estudo_a/resultados_estudo_a.json: a_repeatability"
+      - "V1 (text inferido_compativel): 197 groups / 600 meds / 1,554 pairs, 0 differing; one-sided 95% upper bound 1.51%"
+      - "V2 (text armazenado): 319 groups / 909 meds / 1,937 pairs, 0 differing; upper bound 0.93%"
+      - "2024 (raw EN, inferido_compativel): 193 groups / 591 meds / 1,547 pairs; 15 groups (24 pairs) differ, all only in the order of an entity's Attributes array; upper bound 11.7%"
+    limits: >-
+      Holds for V1 and V2 at level 2. In 2024 the differences are attribute-array order only (entities,
+      concepts, scores and traits identical); attributes do not enter the post-processing. Repeatability is
+      conditional on the runs and model versions observed; no cross-run claim.
+  - id: A-b-translation
+    source: "inventory §6; protocol §9.1"
+    claim: "Identical Portuguese indications received different English translations."
+    state: rederivado_verificado
+    evidence:
+      - "docs/estudo_a/resultados_estudo_a.json: b_translation.by_normalized_pt.full_corpus (516 groups with repeated PT; 471 with >1 distinct EN; 2,658 variant pairs, character edit distance median 30, p90 99, max 3,838)"
+    limits: "Stored translations only; the translation service and prompt settings are not recorded (process not reproducible)."
+  - id: A-c-contrast
+    source: "design §0 draft; deviation D2"
+    claim: "Real contrast V1 post-processing -> V2 post-processing on the same V1 responses (WHO space)."
+    state: rederivado_verificado
+    evidence:
+      - "docs/estudo_a/resultados_estudo_a.json: c_contrast_v1_to_v2.dev_cal (11,669 V1 keys; 6,862 appear, 6,503 disappear; shapes 8,699/3,676/946/44; non-monotone 1,302)"
+      - "c_contrast_v1_to_v2.full_corpus, descriptive only (34,101 V1 keys; 27,405 appear, 18,284 disappear; shapes 27,874/14,182/3,464/168/1; non-monotone 4,555; map in 0 minimal sets)"
+    limits: >-
+      Hybrids other than the V1 and V2 presets have no historical execution: they are counterfactuals of the
+      re-derived pipeline. The historical V1->V2 transition also changed the submitted text and the ACM
+      model; this contrast isolates only the post-processing on fixed responses and is not a causal account of
+      the transition.
