@@ -1,4 +1,6 @@
 INTERFACE READY: 2d9f06b
+INTERFACE CHANGE: `truth.build_truth` — o callback `dummy` passa a ser `dummy(hybrids, key, f)` (padrão
+`oracle.dummies.certificate`); `expressible(cell, hybrids, S)` tem padrão N1/N2 (SPEC 7.1); novo `recorded=` opcional.
 
 # Status — Lead β
 
