@@ -13,8 +13,9 @@ Read `docs/SPEC.md` (when present), `docs/design/*.md` and your task brief in `d
 
 ## Commands
 
-- `uv sync` then `uv run pytest` (default run excludes `docker` and `paid` markers).
-- Data-heavy tests: `flock /home/vinicius/hab-data/.heavy.lock uv run pytest -m dumps`.
+- `uv sync` then `uv run pytest` (default run excludes `docker`, `paid` and `dumps` markers).
+- Data-heavy tests: `uv run pytest -m dumps <files>`, one heavy run per lead at a time; workers do not
+  run `-m dumps` in parallel (`flock` cannot wrap commands under the permission layer).
 - Environment (set in `.claude/settings.json`): `HAB_DUMPS_DIR` (extracted mysqldumps, read-only),
   `HAB_WORKSPACE` (`~/healdb-reconstrucao`, read-only), `HAB_DATA_DIR` (`/home/vinicius/hab-data`: snapshots,
   truth, views, runs, campaign — never inside the repo).

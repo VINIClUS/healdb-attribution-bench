@@ -35,7 +35,7 @@ build-backend = "uv_build"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-m 'not docker and not paid'"
+addopts = "-m 'not docker and not paid and not dumps'"
 markers = [
     "dumps: needs the extracted HealDB dumps (HAB_DUMPS_DIR) or snapshots (HAB_DATA_DIR)",
     "docker: needs Docker and the throwaway MySQL replay container",
