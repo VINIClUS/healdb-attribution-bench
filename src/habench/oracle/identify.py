@@ -54,6 +54,7 @@ class History:
     variants0: frozenset[str] = frozenset()
     variants1: frozenset[str] = frozenset()
     label: str = ""
+    runs: dict | None = field(default=None, repr=False)  # run cache shared by histories over the same evidence
     _cache: dict = field(default_factory=dict, repr=False)
 
     def contrast(self, ctx: Context) -> Contrast:
@@ -69,7 +70,7 @@ class History:
     def hybrids(self, ctx: Context, levels: str = "executed") -> Hybrids:
         k = ("hybrids", levels)
         if k not in self._cache:
-            self._cache[k] = Hybrids(self.contrast(ctx), self.evidence, ctx.hier, levels=levels)
+            self._cache[k] = Hybrids(self.contrast(ctx), self.evidence, ctx.hier, levels=levels, cache=self.runs)
         return self._cache[k]
 
     def family(self, ctx: Context, key: AssocKey) -> Family | None:
