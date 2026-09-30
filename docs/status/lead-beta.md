@@ -97,17 +97,23 @@ Estados por célula (6 consultas):
 
 | célula | estados | saturadas | média \|W_hi\| |
 |---|---|---|---|
-| L1 × R-C | ambiguo 5, indeterminado 1 | 0 | 27,2 |
+| L1 × R-C | ambiguo 5, indeterminado 1 (\|W_lo\|/\|W_hi\|: 1/26, 15/29, 15/29, 24/25, 15/29, 13/25) | 0 | 27,2 |
 | L2-R × R-C | identificado 5, indeterminado 1 | 6 | 1,17 |
 | L2-M × R-C | identificado 6 | 6 | 1,0 |
 | L2-R-A3 × R-A | identificado 5, indeterminado 1 | 6 | 1,17 |
 | L2-R-A2 × R-C | indeterminado 6 | 0 | 3,5 |
 
-- **L1 `indeterminado` (G98, grupo de 1 med): limitação do lifting, erro na direção conservadora.**
-  - Os conceitos de `a` (G98.8) são o conceito de topo de entidades que também têm G96.9/G96/G99.
-  - Ao removê-los, G96/G969 sobem ao topo e aparecem no grupo levantado. Por isso o lifting é rejeitado e
-    W_lo = {F*}, com |W_hi| = 26.
+- **L1: a distância entre W_lo e W_hi vem sobretudo da construção do lifting, não do grupo.**
+  - Em grupos de 1 med, |W_lo| fica em cerca de metade de |W_hi|. As taxas `ambiguo`/`indeterminado` de L1 em dev
+    refletem essa construção.
   - W_lo continua um limite inferior correto: o erro é perder `ambiguo`, nunca afirmar algo falso.
+  - Causas, contadas em K11 (todas as testemunhas das famílias em W_hi \ W_lo):
+    - 73 falham pelo **concorrente** `Z99.9`: ele cria uma chave WHO real (Z99) no grupo levantado;
+    - 2 falham porque a própria hipótese muda outras chaves de `a` (legítimo);
+    - 0 falham por promoção de irmão.
+  - G98 (W_lo = {F*}, |W_hi| = 26) mostra a outra causa, **promoção de irmão**:
+    - os conceitos de `a` (G98.8) são o topo de entidades que também têm G96.9/G96/G99;
+    - ao removê-los, G96/G969 sobem ao topo e aparecem no grupo levantado.
 - **L2-R `indeterminado` (R093, grupo de 11 meds): comportamento previsto pelo SPEC.**
   - A hipótese `occ` alt no run 0 reproduz a observação marginal de `a` com família {icd_thr, trait}.
   - Ela muda, porém, os finais de outras meds (2954, 6246, 5159). Assim entra em W_hi (marginal) e não em W_lo
@@ -126,7 +132,11 @@ Em todos os casos abaixo, `NotImplementedError` → `build_truth` omite a célul
 - Simplificações declaradas de U:
   - Ids distintos dentro dos bundles (`symbolize` devolve None para Id duplicado);
   - classes de trait fundidas pelo comportamento de uma entidade só;
-  - o lifting remove os conceitos de `a` de todas as entidades, o que pode falhar como no caso G98.
+  - o lifting remove os conceitos de `a` de todas as entidades, o que falha quando um irmão sobe ao topo (G98);
+  - o concorrente sintético `Z99.9` (0,999) é um código real: levantado no grupo, cria a chave Z99 e derruba o
+    lifting (K11).
+- Melhoria possível, fora do β3: um concorrente que esconda os conceitos de `a` sem criar chave no grupo. Isso muda
+  a semântica da expansão e exige refazer a medição.
 
 ## Testes
 
