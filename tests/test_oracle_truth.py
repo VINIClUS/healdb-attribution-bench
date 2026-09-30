@@ -2,10 +2,18 @@ import json
 
 import pytest
 
-from habench.oracle import dummies, toy
+from habench.oracle import toy
 from habench.oracle.contrast import make_contrast
 from habench.oracle.hybrids import Hybrids
-from habench.oracle.truth import CellSpec, ContrastTruth, Identification, build_truth, read_truth, write_truth
+from habench.oracle.truth import (
+    CellSpec,
+    ContrastTruth,
+    Identification,
+    build_truth,
+    default_expressible,
+    read_truth,
+    write_truth,
+)
 from habench.pipeline.catalog import V1
 from habench.pipeline.evidence import JsonEdit, Patch
 from habench.types import SYSTEM_ICD10_WHO, AssocKey, Presence, SealedError
@@ -22,8 +30,7 @@ def ex07_truth(**kw) -> ContrastTruth:
     c = make_contrast("c", "g", [MED], "who", V1, V1.with_(ent_thr=0.58, icd_thr=0.55), patches=[p1])
     e = toy.evidence({MED: toy.response([toy.entity(1, 0.59, [("C61", 0.9)]), toy.entity(2, 0.9, [("R50.9", 0.9)])])})
     h = Hybrids(c, e, HIER)
-    return build_truth(h, [("q1", C61), ("q2", R50)], partition="dev", scenario_family="X", cells=CELLS,
-                       dummy=lambda key, f: dummies.certificate(h, key, f), **kw)
+    return build_truth(h, [("q1", C61), ("q2", R50)], partition="dev", scenario_family="X", cells=CELLS, **kw)
 
 
 def test_ex07_truth():
@@ -93,3 +100,35 @@ def test_test_partition_is_never_written(tmp_path):
     sealed = ContrastTruth(t.contrast, "test", t.scenario_family, t.queries, t.necessity)
     with pytest.raises(SealedError):
         write_truth(sealed, tmp_path / "x.json")
+
+
+def test_ex11_declared_cell_necessity_uses_declared_contrast():
+    """EX-11 under L2-R-A3 × R-A: the replay D is {ent_thr, trait}; trait must not be pruned as dummy."""
+    d0 = V1.with_(trait="v1_hyp_le_0.6")
+    x1 = V1.with_(ent_thr=0.55)
+    c = make_contrast("c11", "g", [MED], "who", V1, x1, d0=d0, d1=x1)
+    traits = (("HYPOTHETICAL", 0.62), ("DIAGNOSIS", 0.9))
+    e = toy.evidence({MED: toy.response([toy.entity(1, 0.58, [("C61", 0.9)], traits)])})
+    h = Hybrids(c, e, HIER)
+    hd = Hybrids(c, e, HIER, levels="declared")
+    cells = [CellSpec.of("L2-R-A3", "R-A"), CellSpec.of("L2-R", "R-A")]
+    t = build_truth(h, [("q", C61)], partition="dev", scenario_family="I", cells=cells, declared_hybrids=hd)
+    # declared replay: ∅ absent, D present, {ent_thr} absent, {trait} absent -> ∅, D, ent_thr, trait
+    assert t.necessity[("L2-R-A3", "R-A")] == 4
+    assert t.necessity[("L2-R", "R-A")] == 2  # executed D = {ent_thr}
+
+
+def test_recorded_mismatch_marks_invalid():
+    t = ex07_truth(recorded=dict(q1=(Presence.ABSENT, Presence.ABSENT)))
+    assert not t.valid and "q1" in t.invalid_reason
+    assert ex07_truth(recorded=dict(q1=(Presence.ABSENT, Presence.PRESENT))).valid
+
+
+def test_n1_n2_expressible():
+    x1 = V1.with_(ent_thr=0.55, trait="v2")
+    c = make_contrast("cn", "g", [MED], "who", V1, x1)
+    h = Hybrids(c, toy.evidence({MED: toy.response([toy.entity(1, 0.9, [("C61", 0.9)])])}), HIER)
+    assert default_expressible(CellSpec.of("N2", "R-A"), h, frozenset({"ent_thr"}))
+    assert not default_expressible(CellSpec.of("N2", "R-A"), h, frozenset({"trait"}))
+    assert not default_expressible(CellSpec.of("N1", "R-A"), h, frozenset({"trait"}))  # v2 is not a V1 rule
+    assert default_expressible(CellSpec.of("L2-R", "R-A"), h, frozenset({"trait"}))

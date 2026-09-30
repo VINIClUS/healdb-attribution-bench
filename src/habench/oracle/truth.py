@@ -288,7 +288,31 @@ def read_truth(path: Path) -> ContrastTruth:
 
 
 IdentFn = Callable[[QueryTruth, CellSpec], Identification]
-DummyFn = Callable[[AssocKey, str], bool]
+DummyFn = Callable[[object, AssocKey, str], bool]  # (hybrids in use, key, factor) -> sound certificate
+
+N1_TRAITS = frozenset({"v1", "v1_hyp_le_0.6", "v1_no_required"})
+N1_MAPS = frozenset({"cm_gated", "cm_ungated"})
+
+
+def default_expressible(cs: CellSpec, hybrids, S: frozenset[str]) -> bool:
+    """SPEC 7.1: N1 replays ent_thr, icd_thr, trait among the V1 rules and the map gate; N2 only the thresholds.
+    Patches are evidence edits and stay expressible; every other view expresses every S."""
+    base = split_view(cs.view)[0]
+    if base not in ("N1", "N2"):
+        return True
+    for f in S:
+        if f.startswith("patch:"):
+            continue
+        for x in hybrids.contrast.components(f):
+            if x in ("ent_thr", "icd_thr"):
+                continue
+            levels = {hybrids.base0.get(x), hybrids.base1.get(x)}
+            if base == "N1" and x == "trait" and levels <= N1_TRAITS:
+                continue
+            if base == "N1" and x == "map" and levels <= N1_MAPS:
+                continue
+            return False
+    return True
 
 
 def build_truth(
@@ -301,7 +325,8 @@ def build_truth(
     ident: IdentFn | None = None,
     dummy: DummyFn | None = None,
     declared_hybrids=None,  # Hybrids on the declared levels, for cells without the code link
-    expressible: Callable[[CellSpec, frozenset[str]], bool] | None = None,
+    expressible: Callable[[CellSpec, object, frozenset[str]], bool] = default_expressible,
+    recorded: Mapping[str, tuple[Presence, Presence]] | None = None,
 ) -> ContrastTruth:
     """Truth of one contrast.
 
@@ -309,9 +334,15 @@ def build_truth(
       (habench.oracle.identify). Without `ident`, cells that need U are left out.
     - Necessity per cell: 0 when the capability runs no hybrid; otherwise the joint reference BFS on the
       broker's replay (executed levels with the code link, declared without), with dummy pruning only if
-      the view shows evidence (`dummy(key, f)` must be a sound certificate) and with `expressible`
-      restricting S (N1/N2).
+      the view shows the full response (`dummy(hybrids_in_use, key, f)`, default `oracle.dummies.certificate`,
+      must be sound) and with `expressible` restricting S (N1/N2 by default, SPEC 7.1).
+    - `recorded[qid] = (x0, x1)`: presences recorded by the executed runs; a mismatch with h_∅/h_D marks the
+      contrast invalid (SPEC 5.4).
     """
+    if dummy is None:
+        from habench.oracle import dummies
+
+        dummy = dummies.certificate
     if partition == "test":
         raise SealedError("the test partition is sealed")
     c: Contrast = hybrids.contrast
@@ -344,9 +375,15 @@ def build_truth(
         necessity[(cs.view, cs.capability)] = _necessity(
             cs, hybrids, declared_hybrids, final, dummy, expressible
         )
-    return ContrastTruth(c, partition, scenario_family, tuple(final), necessity,
-                         valid=hybrids.endpoints_reproduce(),
-                         invalid_reason="" if hybrids.endpoints_reproduce() else "h_D does not reproduce x1 (5.4)")
+    reason = ""
+    if not hybrids.endpoints_reproduce():
+        reason = "h_∅/h_D configs differ from the recorded x0/x1 (SPEC 5.4)"
+    for q in final:
+        if recorded is not None and q.qid in recorded and tuple(recorded[q.qid]) != (q.x0, q.x1):
+            reason = f"{q.qid}: h_∅/h_D presences differ from the recorded runs (SPEC 5.4)"
+            break
+    return ContrastTruth(c, partition, scenario_family, tuple(final), necessity, valid=not reason,
+                         invalid_reason=reason)
 
 
 def _necessity(cs: CellSpec, hybrids, declared_hybrids, queries: Sequence[QueryTruth], dummy, expressible) -> int:
@@ -360,11 +397,11 @@ def _necessity(cs: CellSpec, hybrids, declared_hybrids, queries: Sequence[QueryT
             return False
         if cs.no_prep and S & prep:
             return False
-        return expressible is None or expressible(cs, S)
+        return expressible(cs, h, S)
 
     open_q = [q for q in queries if q.eligible]
     qfun = {q.qid: (lambda S, key=q.key: h.state(S, key)) for q in open_q}
     dummies = {}
-    if cs.evidence and dummy is not None:
-        dummies = {q.qid: frozenset(f for f in h.D if dummy(q.key, f)) for q in open_q}
+    if cs.full_response:
+        dummies = {q.qid: frozenset(f for f in h.D if dummy(h, q.key, f)) for q in open_q}
     return fam_mod.necessity(h.D, qfun, admissible=admissible, dummies=dummies)
