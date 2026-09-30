@@ -1,8 +1,10 @@
+DONE: γ
+
 # Status — lead γ
 
 ## Estado
-Onda (a) concluída; (b) em andamento (vistas prontas; broker/RPC e cenários com workers); M (T13) escrito;
-falta T21 runner e o teste de ponta a ponta de M contra o oráculo.
+Concluído: T9–T15, T21, isolamento e smoke de 5 grupos dev. M = oráculo em 2026/2026 consultas reais
+(L2-M × R-A, b = 64). A matriz completa de dev/cal **não** foi lançada (decisão da sessão principal).
 
 ## Feito
 - `methods/base.py`: contrato `Env`/`Method` (SPEC §11.1), `Explanation`/`Certificate`/`Query`, `EvalResult` com
@@ -66,10 +68,12 @@ falta T21 runner e o teste de ponta a ponta de M contra o oráculo.
   - I(c): x0 = x1 em nível, com `variants1` (o diff declarado fica vazio).
 
 ## Em andamento
-- Smoke de 5 grupos dev (`uv run pytest -m dumps tests/test_runner_smoke.py`).
+(nada)
 
-## Próximo
-- Revisar T9; smoke de 5 grupos dev (`-m dumps`) com matriz reduzida; aceitação de M sobre cenários reais.
+## Próximo (sessão principal)
+- Decidir o lançamento da matriz completa de dev/cal (estimativa abaixo) e o armazenamento das vistas.
+- β: pontuação (`eval`) sobre `runs/`; U/identificação (β3) para as células que precisam de U. Hoje o runner chama
+  `build_truth` sem `ident`, então essas células ficam fora da verdade até a β3 entrar.
 
 ## Why-Diff (opcional): não implementado
 - Não há código público (ver `docs/design/ambiente_e_comparadores.md` §3). O exemplo do artigo (Fig. 7a/8, Tabela 2)
@@ -79,10 +83,56 @@ falta T21 runner e o teste de ponta a ponta de M contra o oráculo.
   é o BugDoc. As alegações de superioridade sobre Why-Diff ficam restritas (limitação registrada).
 
 ## Testes
-- `uv run pytest -q` → 650 passed, 3 xfailed (antes de M); `tests/test_methods_m.py` → 10 passed.
+- `uv run pytest -q` → **759 passed, 0 failed, 3 xfailed**. Os 3 xfail estritos são achados de fidelidade do
+  BugDoc: o Teorema 5 falha duas vezes, e o `budget_test.py` upstream precisa de zmq.
+- Smoke `-m dumps`: `uv run pytest -q -m dumps tests/test_runner_smoke.py` → **1 passed in 969.73s (0:16:09)**
+  (5 grupos dev, em `tmp_path`, métodos m e b3, sem cruzamento de informação; 0 divergências de M;
+  log em `/home/vinicius/hab-data/runs/dev/smoke_pytest.log`).
+
+## Smoke de 5 grupos dev (execução registrada)
+- Comando: `uv run python -m habench.runner --partition dev --seed 20260930 --max-groups 5 --name smoke5`
+  (matriz padrão: b0, b1, b2, b3, bugdoc, m; `info_fraction` 0,2). Saída: `/home/vinicius/hab-data/runs/dev/smoke5.out`;
+  progresso: `smoke5.part1.err` e `smoke5.err`.
+- A sessão foi interrompida no contraste 66/138 e o lote foi **retomado** com o mesmo comando (retomada
+  verificada: nenhuma saída recomputada).
+- Resultado (JSON da 2ª parte): `contrasts` 138, `cells_run` 9172, `cells_equivalent` 2774, `errors` 0,
+  `m_checked_queries` 2026, `m_mismatches` 0.
+- Tempo de parede: 1ª parte ≈ 16 min (contrastes 1–66, pelos horários do log: 3/138 às 15:57:51 e 62/138 às
+  16:12:01); 2ª parte 1287 s = 21,5 min (contrastes 67–138, mais a revisita rápida dos 66). **Total ≈ 37 min**,
+  serial, 1 processo pai. O CPU da 2ª parte (pai + filhos) foi 1283 s, ≈ parede: o lote é limitado por CPU e serial.
+- Pico de RSS: pai 558 MiB; cada filho de método é pequeno (processo `spawn` por célula, ≈ 0,1–0,2 s de parede
+  por célula, medido em `tests/test_runner_acceptance.py`).
+- Saídas: `/home/vinicius/hab-data/runs/dev/smoke5/<cid>/<vista>__<cap>__b<orç>__<método>.json` (11 946
+  arquivos, 29 MiB); vistas em `/home/vinicius/hab-data/views/dev/` (20 710 arquivos, **388 MiB**); verdade em
+  `/home/vinicius/hab-data/truth/dev/` (1 550 arquivos, 1,9 MiB).
+- Cenários dos 5 grupos: 138 contrastes (≈ 27,6 por grupo).
+
+## Estimativa da matriz completa (A15)
+- Base: ≈ 2250 s de parede serial por 5 grupos → ≈ 450 s por grupo com a matriz padrão.
+- Grupos (`repro/split_manifest.csv`): dev 461, cal 200.
+- Serial: dev ≈ 461 × 450 s ≈ 58 h; cal ≈ 200 × 450 s ≈ 25 h. Com `m_lenient` em cal (varredura de rigor), cal
+  sobe ≈ 10–15 %.
+- Com 8 CPUs, `--shard i/8` (novo; um processo por CPU, os contrastes escrevem arquivos disjuntos; criar a chave
+  HMAC antes, p. ex. rodando uma vez um shard pequeno): ideal ≈ 7,3 h (dev) + 3,2 h (cal) ≈ **10,5 h**; com ≈ 70 %
+  de eficiência (carga desigual entre contrastes, E/S das vistas), ≈ **15 h**.
+- Ressalvas:
+  - os 5 grupos do smoke são pequenos. O custo do núcleo cresce com o número de medicamentos do grupo, então grupos
+    maiores podem esticar a cauda;
+  - a memória por shard fica ≈ 0,6 GiB (8 shards ≈ 5 GiB, dentro dos 15 GiB compartilhados).
+- **Armazenamento é o gargalo.** As vistas extrapoladas ocupam ≈ 388 MiB / 5 grupos → ≈ 36 GiB em dev e ≈ 15,5 GiB
+  em cal, dominados pelas vistas da família I, cruzadas com 23 perfis. Opções:
+  - vistas por contraste sob demanda, apagadas após as execuções (a verdade guarda o `BrokerSide`, e a reconstrução
+    é determinística, byte a byte);
+  - ou reduzir `info_fraction`.
 
 ## Números re-derivados
 - Exemplo 1 do BugDoc: 2 execuções novas (`uv run pytest -q tests/test_methods_bugdoc.py`).
+- Custo de `run_isolated` por célula (EX-07, L2-M): b0 0,101 s; b1 0,088 s; b3 0,113 s; bugdoc 0,185 s; m 0,105 s;
+  m_lenient 0,112 s (`rtk proxy uv run pytest -q -s tests/test_runner_acceptance.py -k isolated`).
+- Aceitação de M em brinquedo: 9 contrastes (EX-07/08/09/10/11/14 componentes e bundle, occ×sel, map), todo
+  certificado verdadeiro e cobertura §9.2 (`uv run pytest -q tests/test_runner_acceptance.py`).
+- Aceitação de M em dados reais: 2026 consultas elegíveis, 0 divergências (`smoke5.out`, `runner/check.py`).
+- Smoke do worker de cenários (3 grupos dev): 94 cenários, 0 erros de geração.
 
 ## Perguntas / BLOCKED
 (nenhuma)
