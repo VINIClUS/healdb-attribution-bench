@@ -54,8 +54,19 @@ falta T21 runner e o teste de ponta a ponta de M contra o oráculo.
   e broker reais; todo certificado verdadeiro na tabela-verdade, `eval` só do log, cobertura §9.2 passo 3 satisfeita.
   Os 6 métodos rodam isolados sem `falha_de_execucao`.
 
+- T9 `scenarios/` + `repro/scenario_catalog.yaml`: famílias N (a, b), F (com patches de borda), M (com `EXTEND` no
+  espaço CM), O, X (i, ii com cotas de forma, iii só dev/cal), I (divergência declarado × executado e execuções que
+  realizam `alt`); P, N(c) e N(d) só catalogados. Validadores das invariantes de §4.5; amostragem ≤ 25/25 com
+  probabilidades de inclusão; ids opacos; `test` → `SealedError`; `test_levels()` → `SealedError` até o
+  congelamento. Smoke do worker (3 grupos dev, `-m dumps`): 94 cenários (N 9, F 21, M 14, O 15, X 18, I 17), 0 erros
+  de geração.
+  - Definições adotadas para X(ii) (SPEC linha 1146 não as fixa): "sem efeito verificado" = dummy verdadeiro em
+    todas as consultas alteradas amostradas; "par oposto" = f, g com state({f}) ≠ state(∅) e state({f,g}) =
+    state(∅) numa consulta amostrada. Todo X(ii) é semissintético (leva um patch de cancelamento).
+  - I(c): x0 = x1 em nível, com `variants1` (o diff declarado fica vazio).
+
 ## Em andamento
-- T9 cenários N/F/M/O/X/I e catálogo (worker).
+- Smoke de 5 grupos dev (`uv run pytest -m dumps tests/test_runner_smoke.py`).
 
 ## Próximo
 - Revisar T9; smoke de 5 grupos dev (`-m dumps`) com matriz reduzida; aceitação de M sobre cenários reais.
@@ -86,4 +97,11 @@ falta T21 runner e o teste de ponta a ponta de M contra o oráculo.
 - N1/N2: `final` é o mapa de presença com `schema` `md_v1`/`md_v2`, não as linhas históricas de `md`.
 
 ## REQUEST
-(nenhum)
+- **REQUEST (lead β):** `oracle.contrast._patch_from` devolve `JsonEdit.value` como `list`/`dict` simples. Os patches
+  `add_trait`, `remove_trait` e `swap_entities` usam valores assim, e `Evidence.patched` faz hash do `Patch`, então um
+  contraste relido por `Contrast.from_json`/`read_truth` quebra ao aplicar esses patches. Proposta: congelar os
+  valores em `_patch_from` (tuplas/`frozendict` canônicos) ou fazer `Patch` ter hash pelas edições canônicas (JSON).
+  Contorno atual: `scenarios.patches.freeze_patch`; o runner usa os contrastes em memória, nunca relidos.
+- **REQUEST (lead β), confirmar:** em N1/N2 o broker usa agora `oracle.truth.default_expressible` (patches são
+  expressáveis). Uma leitura literal da linha 622 do SPEC os excluiria; como a regra é compartilhada, a verdade e o
+  broker concordam em qualquer caso.

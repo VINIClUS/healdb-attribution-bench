@@ -8,9 +8,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import resource
 import sys
+import time
 
 from habench.runner.batch import Batch, load_inputs
+from habench.runner.check import check_m
 from habench.runner.matrix import DEFAULT_METHODS, METHODS
 
 
@@ -23,6 +26,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--methods", default=",".join(DEFAULT_METHODS))
     ap.add_argument("--info-fraction", type=float, default=0.2)
     a = ap.parse_args(argv)
+    t0 = time.monotonic()
     methods = tuple(m for m in a.methods.split(",") if m)
     unknown = set(methods) - set(METHODS)
     if unknown:
@@ -36,6 +40,19 @@ def main(argv: list[str] | None = None) -> int:
     batch = Batch(a.partition, a.name, evidence, hier, texts, methods=methods, info_fraction=a.info_fraction,
                   seed=a.seed)
     counts = batch.run(scenarios, progress=lambda s: print(s, file=sys.stderr, flush=True))
+    check = check_m(batch.data_dir, a.partition, a.name) if "m" in methods else None
+    self_ru, child_ru = resource.getrusage(resource.RUSAGE_SELF), resource.getrusage(resource.RUSAGE_CHILDREN)
+    counts |= {
+        "wall_seconds": round(time.monotonic() - t0, 1),
+        "cpu_seconds": round(self_ru.ru_utime + self_ru.ru_stime + child_ru.ru_utime + child_ru.ru_stime, 1),
+        "peak_rss_mib_parent": round(self_ru.ru_maxrss / 1024, 1),
+        "peak_rss_mib_children": round(child_ru.ru_maxrss / 1024, 1),
+        "scenarios": len(scenarios),
+    }
+    if check is not None:
+        counts |= {"m_checked_queries": check.queries, "m_mismatches": len(check.mismatches)}
+        for m in check.mismatches[:20]:
+            print("mismatch", *m, file=sys.stderr)
     print(json.dumps(counts, sort_keys=True))
     return 0
 
