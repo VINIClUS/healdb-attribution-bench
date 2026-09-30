@@ -264,10 +264,9 @@ class Evidence:
 
     def extraction_doc(self, med: int) -> dict | None:
         """Parsed response of `med` with patches applied and without transport metadata (level 2)."""
-        text = self._cache.get("_base", self)._raw.get(med)
-        if text is None:
+        if self.info[med].status in (STATUS_FAILED, STATUS_MISSING):
             return None
-        doc = json.loads(text)
+        doc = json.loads(self._cache.get("_base", self)._raw[med])  # type: ignore[arg-type]
         edits = [e for p in sorted(self.patches, key=lambda p: p.id) for e in p.edits if e.med == med]
         doc = apply_edits(doc, edits) if edits else doc
         doc.pop(TRANSPORT_KEY, None)
