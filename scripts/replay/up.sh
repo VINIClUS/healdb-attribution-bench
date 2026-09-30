@@ -49,7 +49,9 @@ load_ddl() { # table: CREATE TABLE only
   report healdb "$t" "$st" $(( $(date +%s) - s ))
 }
 
-for t in hd_icd_group hd_icd_category hd_icd_subcategory hd_int_med_disease_api_response; do
+# hd_medication: parent rows for the FK of entity (FK_MEDICATION_ACM2) and md (FK_MEDICATION_ACM); its own FKs
+# are not checked during the load (mysqldump preamble sets FOREIGN_KEY_CHECKS=0)
+for t in hd_icd_group hd_icd_category hd_icd_subcategory hd_medication hd_int_med_disease_api_response; do
   load_data "$t"
 done
 for t in hd_int_med_disease_entity hd_int_med_disease_trait hd_medication_disease; do
@@ -60,6 +62,7 @@ docker exec -i -e MYSQL_PWD "$MYSQL_C" mysql -uroot -N 2>&1 <<'SQL' | grep -v Wa
 SELECT 'version', @@version;
 SELECT 'api_response', COUNT(*) FROM healdb.hd_int_med_disease_api_response;
 SELECT 'icd_subcategory', COUNT(*) FROM healdb.hd_icd_subcategory;
+SELECT 'medication', COUNT(*) FROM healdb.hd_medication;
 SELECT 'entity', COUNT(*) FROM healdb.hd_int_med_disease_entity;
 SQL
 echo LOAD_DONE | tee -a "$LOGS/up.log"

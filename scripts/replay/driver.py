@@ -102,6 +102,9 @@ def replay():
     process = load("process_disease_data_json", f"{CODE}/process_disease_data_json.py")
     link = load("link_medications_with_diseases", f"{CODE}/link_medications_with_diseases.py")
     stage("process_disease_data_json", process.process_disease_data_json, cnx, cursor)
+    cursor.execute("SELECT COUNT(*) FROM healdb.hd_int_med_disease_entity")
+    if cursor.fetchone()[0] == 0:
+        sys.exit("process_disease_data_json wrote no entity rows: environment problem, see the log")
     log("OPERATOR ACTION: TRUNCATE hd_medication_disease (not in the historical code; V1 md ids start at 1)")
     cursor.execute("TRUNCATE healdb.hd_medication_disease")
     cnx.commit()
