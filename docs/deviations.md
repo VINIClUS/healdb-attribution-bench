@@ -32,4 +32,33 @@ Registro cumulativo. Cada entrada traz data, seção do protocolo, descrição, 
 
 - **Seção:** §4.3.
 - **Descrição:** o protocolo manda incluir no desenvolvimento as bulas inspecionadas individualmente. Só a amostra de `extend` (`out/extend_amostra.csv`) cobre cerca de 278 medicamentos.
-- **Efeito:** o dev ultrapassa a meta de 200, como o próprio protocolo prevê. O tamanho efetivo será registrado quando os splits forem gerados.
+- **Efeito:** o dev ultrapassa a meta de 200, como o próprio protocolo prevê.
+- **Tamanho efetivo** (`repro/split_manifest.csv`, merge `8740d92`):
+
+| partição | grupos | medicamentos |
+|---|---|---|
+| dev | 461 | 1.082 (inclui todos os inspecionados, entre eles os 278 da amostra de `extend`) |
+| cal | 200 | 286 |
+| test (selado) | 600 | 822 |
+| reserva | 3.826 | 5.257 |
+
+## D5 — Implementação da campanha (lead δ, aceito pela sessão principal, 2026-09-30)
+
+- **Seções:** §9.2, §9.3, §13.
+- **Descrição:**
+  - **Retentativas do botocore.** A intenção do brief é uma requisição HTTP por tentativa. Ela foi realizada com `total_max_attempts=1`, porque no botocore `max_attempts` conta só as retentativas.
+  - **Controles nulos.** O piloto não tem intervenção, então toda repetição com entrada fixa é um nulo. "Nulos em todos os blocos" foi lido assim: todo bloco temporal contém as três condições e as duas funções (referência e avaliação).
+  - **Pipeline completo** sem o mascaramento `<drug>`, que não é reproduzível a partir do código comitado da V2.
+  - **Falhas** são conciliadas no ledger pelo pior caso, porque não se sabe se a AWS as cobra. O ledger superestima o gasto, nunca o subestima.
+- **Efeito:** o teto de US$30 fica conservador. O custo real pode ser menor que o do ledger.
+
+## D6 — Campanha bloqueada pela verificação da conta AWS (2026-09-30)
+
+- **Seções:** §9 (Estudo C) e §13.
+- **Descrição:** a conta do perfil AWS default, em us-east-2, ainda não pode usar os serviços de dados. Tudo está registrado em `docs/campanha/execucoes.md`.
+  - Smoke test do ACM (`smoke-01`, 100 chamadas): todas falharam com `SubscriptionRequiredException`.
+  - Canário Bedrock (`canary-bedrock-01`, 3 chamadas): todas falharam com `AccessDeniedException`, "account is currently being verified".
+  - Nenhuma chamada foi aceita pelo serviço. O ledger conciliou as 103 falhas pelo pior caso (US$0,4925), conforme D5.
+- **Efeito:** o piloto §9.2 não começa até a conta ser liberada.
+  - A sessão principal repete uma sonda de 2 chamadas (pior caso US$0,002) antes de retomar.
+  - Nada que dependa de chamadas pagas entra no relatório enquanto isso.
