@@ -1,0 +1,66 @@
+# Campaign plan template (Study C, protocol §§9, 13). Copy, fill the placeholders, and pass with --plan.
+# Model ids written as <...> are placeholders: a plan containing one can never authorize a paid run.
+# Prices are data, not code; cite their source in price_source.
+
+region: us-east-2
+
+price_source: >-
+  InferICD10CM: AWS Price List for Comprehend Medical, us-east-2, version 2026-09-11 (first 2M units/month).
+  Bedrock: fill from the Bedrock price list for the chosen models before any paid run.
+
+acm_price:
+  usd_per_unit: 0.0005   # one unit = 100 characters, minimum 1 unit per request
+  unit_chars: 100
+  min_units: 1
+
+# Price per million tokens, keyed by the exact Bedrock model id used in profiles.
+token_prices: {}
+#  <model id>:
+#    input_usd_per_mtok: 0.0
+#    output_usd_per_mtok: 0.0
+
+# §9.2: a commercial model; the same with lower randomness; an open-weights model with identified weights.
+# temperature null = service default (not sent).
+profiles:
+  - name: commercial
+    model_id: <MODEL_ID_COMMERCIAL>
+    temperature: null
+  - name: commercial_t0
+    model_id: <MODEL_ID_COMMERCIAL>
+    temperature: 0.0
+  - name: open_weights
+    model_id: <MODEL_ID_OPEN_WEIGHTS>
+    temperature: null
+
+max_tokens: 4096   # fixed for every translation call; worst-case output cost uses it
+
+cap_usd: 30.0      # hard cumulative cap over the whole ledger, smoke test included (docs/decisoes.md)
+
+retry:
+  max_attempts: 3  # attempts per scheduled call, each with its own record and reservation
+  backoff_s: 5.0
+  retryable:
+    - ThrottlingException
+    - TooManyRequestsException
+    - ServiceUnavailableException
+    - InternalServerException
+    - InternalServerError
+    - ModelNotReadyException
+    - ModelTimeoutException
+    - ReadTimeoutError
+    - ConnectTimeoutError
+    - EndpointConnectionError
+
+block_spacing_s: 3600   # minimum time between the starts of consecutive temporal blocks
+
+seed: 20260930
+
+smoke:
+  texts: 20
+  repetitions: 5
+
+pilot:
+  texts: 60
+  repetitions: 10   # total executions per text/profile
+  references: 6     # the other 4 are evaluation realizations (§9.2)
+  blocks: 10        # temporal blocks (§9.3)
