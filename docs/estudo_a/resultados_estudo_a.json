@@ -1,0 +1,463 @@
+{
+  "a_repeatability": {
+    "g0327": {
+      "by_phase_all_members_in_phase": {
+        "1": {
+          "differing_group_fraction": 0.07772020725388601,
+          "n_groups_differing": 15,
+          "n_meds_in_groups": 591,
+          "n_pairs": 1547,
+          "n_pairs_differing": 24,
+          "n_texts_with_repeats": 193,
+          "upper95_differing_group_fraction": 0.11715322619121513
+        }
+      },
+      "compared": "level-2 equality: response JSON without the top-level ResponseMetadata key, canonical serialization (sorted object keys, arrays in their original order), so ModelVersion, entities, traits, candidates and scores all count; RequestId and HTTP date do not. Groups are sets of >= 2 medications of one run with identical submitted text.",
+      "cross_phase": {
+        "differing_group_fraction": null,
+        "n_groups_differing": 0,
+        "n_meds_in_groups": 0,
+        "n_pairs": 0,
+        "n_pairs_differing": 0,
+        "n_texts_with_repeats": 0,
+        "upper95_differing_group_fraction": null
+      },
+      "differing_groups_attribute_order_only": 15,
+      "model_versions": {
+        "2.7.0.20231001": 7447
+      },
+      "n_excluded_without_text": 0,
+      "n_responses": 7447,
+      "n_responses_excluded_failed": 0,
+      "overall": {
+        "differing_group_fraction": 0.07772020725388601,
+        "n_groups_differing": 15,
+        "n_meds_in_groups": 591,
+        "n_pairs": 1547,
+        "n_pairs_differing": 24,
+        "n_texts_with_repeats": 193,
+        "upper95_differing_group_fraction": 0.11715322619121513
+      },
+      "pairs_by_phase_pair": {
+        "1-1": {
+          "n_pairs": 1547,
+          "n_pairs_differing": 24
+        }
+      },
+      "phase_sizes": {
+        "1": 7447
+      },
+      "run": "g0327",
+      "text_definition": "raw ds_indication_eng of the g0327 translate table, no strip, no header (F1 C0); inferred, not stored",
+      "text_state": "inferido_compativel"
+    },
+    "v1": {
+      "by_phase_all_members_in_phase": {
+        "1": {
+          "differing_group_fraction": 0.0,
+          "n_groups_differing": 0,
+          "n_meds_in_groups": 600,
+          "n_pairs": 1554,
+          "n_pairs_differing": 0,
+          "n_texts_with_repeats": 197,
+          "upper95_differing_group_fraction": 0.015091723853914218
+        },
+        "2": {
+          "differing_group_fraction": null,
+          "n_groups_differing": 0,
+          "n_meds_in_groups": 0,
+          "n_pairs": 0,
+          "n_pairs_differing": 0,
+          "n_texts_with_repeats": 0,
+          "upper95_differing_group_fraction": null
+        },
+        "3": {
+          "differing_group_fraction": null,
+          "n_groups_differing": 0,
+          "n_meds_in_groups": 0,
+          "n_pairs": 0,
+          "n_pairs_differing": 0,
+          "n_texts_with_repeats": 0,
+          "upper95_differing_group_fraction": null
+        }
+      },
+      "compared": "level-2 equality: response JSON without the top-level ResponseMetadata key, canonical serialization (sorted object keys, arrays in their original order), so ModelVersion, entities, traits, candidates and scores all count; RequestId and HTTP date do not. Groups are sets of >= 2 medications of one run with identical submitted text.",
+      "cross_phase": {
+        "differing_group_fraction": null,
+        "n_groups_differing": 0,
+        "n_meds_in_groups": 0,
+        "n_pairs": 0,
+        "n_pairs_differing": 0,
+        "n_texts_with_repeats": 0,
+        "upper95_differing_group_fraction": null
+      },
+      "differing_groups_attribute_order_only": 0,
+      "model_versions": {
+        "3.0.0.20231001": 7447
+      },
+      "n_excluded_without_text": 0,
+      "n_responses": 7447,
+      "n_responses_excluded_failed": 0,
+      "overall": {
+        "differing_group_fraction": 0.0,
+        "n_groups_differing": 0,
+        "n_meds_in_groups": 600,
+        "n_pairs": 1554,
+        "n_pairs_differing": 0,
+        "n_texts_with_repeats": 197,
+        "upper95_differing_group_fraction": 0.015091723853914218
+      },
+      "pairs_by_phase_pair": {
+        "1-1": {
+          "n_pairs": 1554,
+          "n_pairs_differing": 0
+        }
+      },
+      "phase_sizes": {
+        "1": 7427,
+        "2": 18,
+        "3": 2
+      },
+      "run": "v1",
+      "text_definition": "(header1 + s + header2 + s)[:10000], s = ds_indication_eng.strip() (F1 4.2); reconstruction, not stored",
+      "text_state": "inferido_compativel"
+    },
+    "v2": {
+      "by_phase_all_members_in_phase": {
+        "A": {
+          "differing_group_fraction": 0.0,
+          "n_groups_differing": 0,
+          "n_meds_in_groups": 878,
+          "n_pairs": 1907,
+          "n_pairs_differing": 0,
+          "n_texts_with_repeats": 307,
+          "upper95_differing_group_fraction": 0.00971062994864813
+        },
+        "B": {
+          "differing_group_fraction": 0.0,
+          "n_groups_differing": 0,
+          "n_meds_in_groups": 31,
+          "n_pairs": 30,
+          "n_pairs_differing": 0,
+          "n_texts_with_repeats": 12,
+          "upper95_differing_group_fraction": 0.22092219194555585
+        }
+      },
+      "compared": "level-2 equality: response JSON without the top-level ResponseMetadata key, canonical serialization (sorted object keys, arrays in their original order), so ModelVersion, entities, traits, candidates and scores all count; RequestId and HTTP date do not. Groups are sets of >= 2 medications of one run with identical submitted text.",
+      "cross_phase": {
+        "differing_group_fraction": null,
+        "n_groups_differing": 0,
+        "n_meds_in_groups": 0,
+        "n_pairs": 0,
+        "n_pairs_differing": 0,
+        "n_texts_with_repeats": 0,
+        "upper95_differing_group_fraction": null
+      },
+      "differing_groups_attribute_order_only": 0,
+      "model_versions": {
+        "3.2.0.20251001": 7447
+      },
+      "n_excluded_without_text": 0,
+      "n_responses": 7447,
+      "n_responses_excluded_failed": 0,
+      "overall": {
+        "differing_group_fraction": 0.0,
+        "n_groups_differing": 0,
+        "n_meds_in_groups": 909,
+        "n_pairs": 1937,
+        "n_pairs_differing": 0,
+        "n_texts_with_repeats": 319,
+        "upper95_differing_group_fraction": 0.009347052435473069
+      },
+      "pairs_by_phase_pair": {
+        "A-A": {
+          "n_pairs": 1907,
+          "n_pairs_differing": 0
+        },
+        "B-B": {
+          "n_pairs": 30,
+          "n_pairs_differing": 0
+        }
+      },
+      "phase_sizes": {
+        "A": 7016,
+        "B": 431
+      },
+      "run": "v2",
+      "text_definition": "ds_text_submitted of hd_int_med_disease_api_response, as stored",
+      "text_state": "armazenado"
+    }
+  },
+  "b_translation": {
+    "by_normalized_pt": {
+      "dev_cal": {
+        "distance_absolute": {
+          "max": 3838.0,
+          "median": 35.0,
+          "min": 1.0,
+          "n": 938,
+          "p90": 92.0
+        },
+        "distance_normalized": {
+          "max": 0.6430769230769231,
+          "median": 0.07903064623584277,
+          "min": 0.002028397565922921,
+          "n": 938,
+          "p90": 0.17702793411473128
+        },
+        "distinct_english_per_group": {
+          "max": 16.0,
+          "median": 3.0,
+          "min": 1.0,
+          "n": 115,
+          "p90": 6.6000000000000085
+        },
+        "n_english_variant_pairs": 938,
+        "n_groups_with_distinct_english": 107,
+        "n_groups_with_repeats": 115,
+        "n_meds_in_groups": 519
+      },
+      "full_corpus": {
+        "distance_absolute": {
+          "max": 3838.0,
+          "median": 30.0,
+          "min": 1.0,
+          "n": 2658,
+          "p90": 99.0
+        },
+        "distance_normalized": {
+          "max": 0.7810945273631841,
+          "median": 0.07515958093767972,
+          "min": 0.0016155088852988692,
+          "n": 2658,
+          "p90": 0.20073021377348715
+        },
+        "distinct_english_per_group": {
+          "max": 17.0,
+          "median": 2.0,
+          "min": 1.0,
+          "n": 516,
+          "p90": 5.0
+        },
+        "n_english_variant_pairs": 2658,
+        "n_groups_with_distinct_english": 471,
+        "n_groups_with_repeats": 516,
+        "n_meds_in_groups": 1890
+      },
+      "other_partitions": {
+        "distance_absolute": {
+          "max": 769.0,
+          "median": 27.0,
+          "min": 1.0,
+          "n": 1720,
+          "p90": 102.0
+        },
+        "distance_normalized": {
+          "max": 0.7810945273631841,
+          "median": 0.07238472137265442,
+          "min": 0.0016155088852988692,
+          "n": 1720,
+          "p90": 0.21483208085479344
+        },
+        "distinct_english_per_group": {
+          "max": 17.0,
+          "median": 2.0,
+          "min": 1.0,
+          "n": 401,
+          "p90": 5.0
+        },
+        "n_english_variant_pairs": 1720,
+        "n_groups_with_distinct_english": 364,
+        "n_groups_with_repeats": 401,
+        "n_meds_in_groups": 1371
+      }
+    },
+    "by_raw_pt_strip": {
+      "dev_cal": {
+        "distance_absolute": {
+          "max": 635.0,
+          "median": 34.0,
+          "min": 1.0,
+          "n": 664,
+          "p90": 95.40000000000009
+        },
+        "distance_normalized": {
+          "max": 0.6430769230769231,
+          "median": 0.08251943049728316,
+          "min": 0.002028397565922921,
+          "n": 664,
+          "p90": 0.19094106898126997
+        },
+        "distinct_english_per_group": {
+          "max": 12.0,
+          "median": 2.0,
+          "min": 1.0,
+          "n": 109,
+          "p90": 6.0
+        },
+        "n_english_variant_pairs": 664,
+        "n_groups_with_distinct_english": 98,
+        "n_groups_with_repeats": 109,
+        "n_meds_in_groups": 448
+      },
+      "full_corpus": {
+        "distance_absolute": {
+          "max": 769.0,
+          "median": 28.0,
+          "min": 1.0,
+          "n": 2051,
+          "p90": 101.0
+        },
+        "distance_normalized": {
+          "max": 0.7810945273631841,
+          "median": 0.0759493670886076,
+          "min": 0.0016313213703099511,
+          "n": 2051,
+          "p90": 0.22653721682847897
+        },
+        "distinct_english_per_group": {
+          "max": 16.0,
+          "median": 2.0,
+          "min": 1.0,
+          "n": 469,
+          "p90": 5.0
+        },
+        "n_english_variant_pairs": 2051,
+        "n_groups_with_distinct_english": 420,
+        "n_groups_with_repeats": 469,
+        "n_meds_in_groups": 1666
+      },
+      "other_partitions": {
+        "distance_absolute": {
+          "max": 769.0,
+          "median": 26.0,
+          "min": 1.0,
+          "n": 1387,
+          "p90": 101.0
+        },
+        "distance_normalized": {
+          "max": 0.7810945273631841,
+          "median": 0.07335907335907337,
+          "min": 0.0016313213703099511,
+          "n": 1387,
+          "p90": 0.24237550262913746
+        },
+        "distinct_english_per_group": {
+          "max": 16.0,
+          "median": 2.0,
+          "min": 1.0,
+          "n": 360,
+          "p90": 5.0
+        },
+        "n_english_variant_pairs": 1387,
+        "n_groups_with_distinct_english": 322,
+        "n_groups_with_repeats": 360,
+        "n_meds_in_groups": 1218
+      }
+    },
+    "compared": "medications with a V1 response, grouped by identical Portuguese text (key: normalize_pt, or raw ds_indication.strip()); English variants are the distinct ds_indication_eng.strip() values of a group; distance is the character (code point) Levenshtein distance over all pairs of distinct variants; normalized distance = distance / max(length); percentiles by linear interpolation (numpy default).",
+    "n_medications": 7447
+  },
+  "c_contrast_v1_to_v2": {
+    "dev_cal": {
+      "appear": 6862,
+      "disappear": 6503,
+      "distinct_truth_tables_all": 491,
+      "distinct_truth_tables_changed": 285,
+      "factors": [
+        "ent_thr",
+        "icd_thr",
+        "map",
+        "occ",
+        "sel",
+        "trait"
+      ],
+      "n_changed": 13365,
+      "n_hybrids": 64,
+      "n_keys_union": 38956,
+      "n_keys_v1": 11669,
+      "n_keys_v2": 12028,
+      "n_medications": 1368,
+      "non_monotone": 1302,
+      "participation": {
+        "ent_thr": 802,
+        "icd_thr": 3096,
+        "map": 0,
+        "occ": 4644,
+        "sel": 7821,
+        "trait": 4483
+      },
+      "scope_note": "development and calibration partitions",
+      "shape_histogram": {
+        "1": 8699,
+        "2": 3676,
+        "3": 946,
+        "4": 44
+      }
+    },
+    "full_corpus": {
+      "appear": 27405,
+      "disappear": 18284,
+      "distinct_truth_tables_all": 804,
+      "distinct_truth_tables_changed": 487,
+      "factors": [
+        "ent_thr",
+        "icd_thr",
+        "map",
+        "occ",
+        "sel",
+        "trait"
+      ],
+      "n_changed": 45689,
+      "n_hybrids": 64,
+      "n_keys_union": 141662,
+      "n_keys_v1": 34101,
+      "n_keys_v2": 43222,
+      "n_medications": 7447,
+      "non_monotone": 4555,
+      "participation": {
+        "ent_thr": 2287,
+        "icd_thr": 12784,
+        "map": 0,
+        "occ": 18859,
+        "sel": 23425,
+        "trait": 17561
+      },
+      "scope_note": "full corpus, descriptive only (deviation D2), not confirmatory",
+      "shape_histogram": {
+        "1": 27874,
+        "2": 14182,
+        "3": 3464,
+        "4": 168,
+        "5": 1
+      }
+    }
+  },
+  "input_claim_states": {
+    "contrast_v1_to_v2_hybrids": "rederivado (hybrids other than the V1 and V2 presets have no historical oracle)",
+    "g0327_api_response": "armazenado",
+    "g0327_submitted_text": "inferido_compativel",
+    "translation_texts": "armazenado",
+    "v1_api_response": "armazenado",
+    "v1_submitted_text": "inferido_compativel",
+    "v2_api_response": "armazenado",
+    "v2_text_submitted": "armazenado"
+  },
+  "scope_note": "Descriptive aggregates. Repeatability and translation cover the full corpus and the contrast is reported for dev+cal and, descriptively only, for the full corpus (deviation D2). No causal claim about the V1 to V2 transition (protocol 3, Study A).",
+  "snapshot_sha256": {
+    "g0327": {
+      "hd_int_med_disease_api_response": "6eb3e4262b8dc4dff8ae30dd8489785a1d2a76dbab7a28c62e2bd81bb722aed6",
+      "hd_translate_eng_leaflet_section": "97b1be02362aef64f44ac0aa2af53df011eebc612ca9f291495ff9ee74ce0719"
+    },
+    "split_manifest_csv": "split_manifest.csv (partition labels only)",
+    "v1": {
+      "hd_icd_category": "d006ef0b75ea20f523425234053582ae9ddf7e6a1bc7c37fb934de203c39b286",
+      "hd_icd_subcategory": "ffafa921abda48b14dcfab9d6d55b35657073bc88b2ae8a2058d0c868f8c32d6",
+      "hd_int_med_disease_api_response": "be390a788ed14391c28032518da6cec7b9b2d0e2f5ab6f468398929eb9f74a89",
+      "hd_translate_eng_leaflet_section": "aee2c6760ef023a971664ea33552fbbdec29d6822bd42fa91138fe23504416cb"
+    },
+    "v2": {
+      "hd_int_med_disease_api_response": "7947f47ed988937592de13da5f4cd249efcd60fc705cb12be343f2b486b7358f"
+    }
+  }
+}
