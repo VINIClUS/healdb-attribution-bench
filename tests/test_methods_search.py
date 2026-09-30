@@ -160,20 +160,19 @@ def test_matches_naive(sc):
 @settings(max_examples=300, deadline=None)
 def test_dummy_pruning_keeps_family(sc, data):
     names, table, inad = sc
-    dummies = true_dummies(table, names)
+    # In the core, admissibility depends only on S ∩ prep (SPEC 5.3) and dummy rules never certify a prep factor
+    # (SPEC 4.6 rule 0), so adding or removing a certified dummy never changes admissibility. Only such dummies
+    # are realistic; others let pruning skip admissible supersets of inadmissible sets.
+    dummies = frozenset(
+        f for f in true_dummies(table, names)
+        if all((s in inad) == ((s | {f}) in inad) for s in subsets(names) if f not in s)
+    )
     chosen = frozenset(data.draw(st.sets(st.sampled_from(sorted(dummies))))) if dummies else frozenset()
     env = env_for(table, names, inadmissible=inad)
     res = bfs(env.evaluate, names, {"q": KEY}, {"q": chosen})
     fam, complete = naive(table, inad, names)
-    # Dummy pruning is lossy next to inadmissible sets (spec gap, reported to the lead): it can drop T+{d} when T
-    # is inadmissible, and an inadmissible set pruned for containing a dummy is never seen as "unknown", so
-    # `complete` may be True where §6.1 says False. Only soundness and the no-inadmissible case are guaranteed.
-    assert as_sets(res) <= fam
-    if not inad:
-        assert as_sets(res) == fam and res.complete["q"]
-    if not chosen:
-        assert as_sets(res) == fam and res.complete["q"] == complete
-    plain =bfs(env_for(table, names, inadmissible=inad).evaluate, names, {"q": KEY})
+    assert as_sets(res) == fam and res.complete["q"] == complete
+    plain = bfs(env_for(table, names, inadmissible=inad).evaluate, names, {"q": KEY})
     assert len(res.evaluated) <= len(plain.evaluated)
 
 
