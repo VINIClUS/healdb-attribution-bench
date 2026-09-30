@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import math
 import re
 import sys
@@ -154,6 +155,27 @@ def test_parse_driver_log():
     ]
     assert p["versions"].startswith("python 3.12.4")
     assert p["total_s"] == 700.5 and p["historical_error_lines"] == 1
+    assert p["fk_errors_by_constraint"] == {}
+
+
+FK_LINE = ("Error inserting entity for id_medication=1, ICD=E84.9: 1452 (23000): Cannot add or update a child row: "
+           "a foreign key constraint fails (`healdb`.`hd_int_med_disease_entity`, CONSTRAINT `FK_MEDICATION_ACM2` "
+           "FOREIGN KEY (`id_medication`) REFERENCES `hd_medication` (`id_medication`))")
+
+
+def test_manifest_records_setup_actions_and_failed_runs(tmp_path):
+    (tmp_path / "replay_405a10c.log").write_text("\n".join(LOG) + "\n")
+    (tmp_path / "run1.log").write_text("\n".join([FK_LINE, FK_LINE, LOG[-1]]) + "\n")
+    m = replay.write_replay_manifest(
+        tmp_path, tmp_path / "manifest.json", compare_result={"equal": True},
+        setup_operator_actions=("load hd_medication",),
+        failed_runs=({"driver_log": str(tmp_path / "run1.log"), "fix_commit": "abc"}, {"note": "no log"}),
+    )
+    assert m["setup_operator_actions"] == ["load hd_medication"]
+    run1, other = m["failed_runs"]
+    assert run1["fix_commit"] == "abc" and run1["replay"]["fk_errors_by_constraint"] == {"FK_MEDICATION_ACM2": 2}
+    assert run1["replay"]["historical_error_lines"] == 2 and other == {"note": "no log"}
+    assert json.loads((tmp_path / "manifest.json").read_text()) == m
 
 
 def test_driver_log_lines_match_parser(driver, capsys):

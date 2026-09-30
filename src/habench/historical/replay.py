@@ -176,6 +176,7 @@ _TOTAL = re.compile(r"\] total ([0-9.]+)s")
 _OP = re.compile(r"\] OPERATOR ACTION: (.*)$")
 _VERSIONS = re.compile(r"\] versions: (.*)$")
 _LOAD = re.compile(r"^load (\S+) (\S+) (OK|ERR.*) (\d+)s$")
+_FK = re.compile(r"CONSTRAINT `([^`]+)` FOREIGN KEY")
 
 
 def _lines(path: Path) -> list[str]:
@@ -191,9 +192,12 @@ def parse_driver_log(lines: list[str]) -> dict:
     versions = None
     total = None
     errors = 0
+    fk_errors: dict[str, int] = {}
     for line in lines:
         if line.startswith("Error"):
             errors += 1
+            if m := _FK.search(line):
+                fk_errors[m.group(1)] = fk_errors.get(m.group(1), 0) + 1
         if m := _END.search(line):
             timings[m.group(1)] = float(m.group(2))
             counts[m.group(1)] = {k: int(v) for k, v in (p.split("=") for p in m.group(3).split())}
@@ -205,7 +209,7 @@ def parse_driver_log(lines: list[str]) -> dict:
             versions = m.group(1)
     return {
         "timings_s": timings, "row_counts_after_stage": counts, "operator_actions": operator_actions,
-        "versions": versions, "total_s": total, "historical_error_lines": errors,
+        "versions": versions, "total_s": total, "historical_error_lines": errors, "fk_errors_by_constraint": fk_errors,
     }
 
 
@@ -233,6 +237,8 @@ def write_replay_manifest(
     export_dir: Path | str | None = None,
     compare_result: dict | None = None,
     xval_result: list[dict] | None = None,
+    setup_operator_actions: tuple[str, ...] = (),
+    failed_runs: tuple[dict, ...] = (),
     compare_fn: Callable[[Path], dict] = compare,
 ) -> dict:
     """Record the Docker replay from its logs (run by the lead after the main session executed Docker).
@@ -240,6 +246,8 @@ def write_replay_manifest(
     Log directory files (written by scripts/replay/*.sh and driver.py): images.txt, pip_freeze.txt, blobs.txt,
     commands.log, up.log, replay_405a10c.log; `export_dir` (default `<log_dir>/../export`) holds the TSVs and
     export_meta.json. Missing files are recorded as empty, never invented.
+    `setup_operator_actions` are environment steps outside the historical code (e.g. loading an FK parent table);
+    each `failed_runs` entry is kept as given and, when it names a `driver_log`, gets that log parsed as `replay`.
     """
     log_dir = Path(log_dir)
     export_dir = Path(export_dir) if export_dir is not None else log_dir.parent / "export"
@@ -260,6 +268,11 @@ def write_replay_manifest(
         "export": export_meta,
         "compare": compare_result,
         "xval": xval_result,
+        "setup_operator_actions": list(setup_operator_actions),
+        "failed_runs": [
+            run | ({"replay": parse_driver_log(_lines(Path(run["driver_log"])))} if "driver_log" in run else {})
+            for run in failed_runs
+        ],
         "log_dir": str(log_dir),
     }
     out.parent.mkdir(parents=True, exist_ok=True)
