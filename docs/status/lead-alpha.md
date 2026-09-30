@@ -22,7 +22,7 @@ PASSED tests/test_pipeline_semantics.py::test_dummy_sound_on_v1_sample
 
 ## Estado
 
-GATE 1 aprovado; α3 em revisão.
+GATE 1 aprovado; α3 concluído; α4 concluído exceto a execução Docker (scripts de replay em finalização).
 
 ## Feito
 
@@ -39,14 +39,24 @@ GATE 1 aprovado; α3 em revisão.
   - V2 (secundário, também exato): `entity_icd` 375.595, `entity_trait` 107.543, `cutoff_audit` 75.119, `md` 27.861
     (atributos inclusive; 0 empates no GROUP_CONCAT). O preset `V2` do núcleo concorda com o `md` V2 em presença e score.
 - Diferença de 1 ULP (med 560, C49.9): não aparece; Python lê o texto decimal do dump e o JSON com o mesmo valor.
+- α3 (`data/{groups,sampling,splits}.py`, `repro/corpus_groups.csv`, `repro/split_manifest.csv`): 5.087 grupos
+  documentais (maior: 50 medicamentos, abaixo de 1%); 13 estratos; semente 20260930; API de selagem (`SealedError`).
+- α4:
+  - `repro/sources_manifest.json` (REDU 9/9 md5 conferem; 21 dumps; blobs; relatórios).
+  - `historical/text_v1.py`: reconstrução do texto V1 conferida (235.557/235.557 trechos; cobertura 36,95%), fases,
+    metadados por chamada.
+  - `historical/dumps_identity.py`: V1 = 0605 em 33/33 `.sql`, exceto a linha de carimbo.
+  - `historical/{repeatability,translation,contrast,study_a}.py` → `docs/estudo_a/resultados_estudo_a.json`.
+  - `repro/claims_study_a.yaml` (23 afirmações) e `docs/estudo_a/relatorio_estudo_a.md` (rascunho descritivo).
 
 ## Em andamento
 
-- α3: grupos, estratos, splits (worker terminou; revisão do lead).
+- α4: scripts `scripts/replay/` e `historical/xval.py` (worker); depois READY_FOR_DOCKER.
 
 ## Próximo
 
-- α4: manifesto de fontes, scripts de replay Docker (READY_FOR_DOCKER), `historical/`, claims, relatório do Estudo A.
+- Após a execução Docker pela sessão principal: `repro/replay_manifest.json` e resultados da validação cruzada
+  (`uv run python -m habench.historical.xval compare`), atualizar claims P1c e o relatório §7.
 
 ## Testes
 
@@ -84,14 +94,17 @@ GATE 1 aprovado; α3 em revisão.
 
 ## Desvios propostos
 
-- **`flock` bloqueado.** A camada de permissões rejeita `flock ... uv run pytest` ("runs its argument as a command").
-  Os testes `dumps` rodam como `uv run pytest -m dumps <arquivo>`, sem o lock. O primeiro build dos snapshots rodou
-  sem o lock, porque o `addopts` do `pyproject.toml` não exclui `dumps` e um worker rodou `uv run pytest` puro.
-  Proposta: liberar `flock` nas permissões ou excluir `dumps` do `addopts`.
+- **Tamanho do dev (D4 efetivo).** dev = 461 grupos / 1.082 medicamentos: 261 grupos forçados (todos os
+  medicamentos inspecionados, incluindo os 278 da amostra de `extend` e a lista de F1) + 200 sorteados. cal = 200
+  grupos / 286 medicamentos; test = 600 / 822; reserve = 3.826 / 5.257. Os 1.000 grupos sorteados seguem a meta
+  200/200/600; o dev é ampliado pelos forçados, como prevê o §4.3.
+- **Repetibilidade de 2024.** 15 de 193 grupos de texto idêntico diferem no nível 2, todos só na ordem do array
+  `Attributes`. O nível 2 preserva a ordem por desenho e conta a diferença; o relatório a qualifica como irrelevante
+  para o pós-processamento (atributos não entram no pipeline).
+
 - **Nível 1 de igualdade "como despejado".** `ds_api_response` é uma coluna JSON do MySQL: o dump traz a
   re-serialização do MySQL, não os bytes enviados pelo ACM. Afirmações de nível 1 valem para o texto do dump.
 
 ## REQUEST
 
-- `.gitignore`: o padrão `data/` ignora também `src/habench/data/`. Ancorar como `/data/` (e idem `truth/`, `views/`,
-  `runs/`). Até lá, os arquivos de `src/habench/data/` entram com `git add -f`.
+- (nenhum; `.gitignore` e `flock` resolvidos pela sessão principal em `d07c812`)
