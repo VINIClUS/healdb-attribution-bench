@@ -7,6 +7,7 @@ from typing import Any
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
+from test_campaign_fixtures import manifest_path
 import yaml
 
 from habench.campaign import cli
@@ -16,7 +17,7 @@ from habench.campaign.runner import Backends
 from habench.campaign.translate import TranslationOutcome
 
 ROOT = Path(__file__).resolve().parents[1]
-MANIFEST = ROOT / "tests" / "data" / "campaign" / "split_manifest.csv"
+MANIFEST = manifest_path()
 N_PILOT_CALLS = 30  # 2 texts x (3 ACM + 2 profiles x 3 x (translation + full pipeline))
 
 

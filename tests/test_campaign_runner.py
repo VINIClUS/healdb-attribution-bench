@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from test_campaign_fixtures import manifest_path
 import yaml
 
 from habench.campaign.acm import AcmOutcome
@@ -28,7 +29,7 @@ from habench.prov.records import Activity, Entity, Relation, RelationKind, valid
 from habench.prov.store import ProvStore
 
 ROOT = Path(__file__).resolve().parents[1]
-FIXTURE = ROOT / "tests" / "data" / "campaign" / "split_manifest.csv"
+FIXTURE = manifest_path()
 COMM, OPEN = "fake/commercial-v1", "fake/open-v1"
 ACM_UNIT = 0.0005
 

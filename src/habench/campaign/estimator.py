@@ -33,6 +33,9 @@ class Estimate:
     total_with_retries_usd: float | None  # x plan.retry.max_attempts
     max_call_usd: dict[tuple[str, str], float | None]  # per-call worst case by (service, condition)
     informative_full_pipeline_usd: float | None  # NOT a hard bound; None without full-pipeline calls
+    # Proxy, NOT a bound: each full-pipeline call priced as the same medication's fixed V2 ACM text
+    # (same structure: header + English indication + blank line). None without such calls or proxies.
+    expected_full_pipeline_usd: float | None
     missing_prices: frozenset[str]
     within_cap: bool | None  # hard-bound total with retries <= cap_usd; None if the total is unknown
     notes: tuple[str, ...] = field(default=())
@@ -87,7 +90,15 @@ def estimate(schedule: Schedule, plan: Plan) -> Estimate:
     if n_full:
         chars = min(len(ACM_HEADER) + CHARS_PER_TOKEN_HEURISTIC * plan.max_tokens, ACM_TEXT_LIMIT)
         informative = n_full * acm_worst_case_usd(chars, plan.acm_price)
+    proxy = {c.medication: c.input_text for c in schedule.calls
+             if c.condition in (Condition.ACM_ISOLATED, Condition.SMOKE) and c.input_text is not None}
+    full = [c for c in schedule.calls if c.condition is Condition.FULL_PIPELINE]
+    expected = None
+    if full and all(c.medication in proxy for c in full):
+        expected = sum(acm_cost_usd(proxy[c.medication], plan.acm_price) for c in full)
     notes = [
+        "expected full_pipeline USD prices each call as the medication's fixed V2 ACM text: a proxy, NOT a bound; "
+        "the paid run reserves the exact cost of each effective pipeline text",
         "full_pipeline input is unknown before collection: hard bound assumes the 10,000-character ACM limit",
         "informative full_pipeline bound assumes <= 4 characters per token and is NOT a hard bound",
         "within_cap compares the with-retries total against cap_usd and ignores spend already in the ledger",
@@ -98,6 +109,7 @@ def estimate(schedule: Schedule, plan: Plan) -> Estimate:
     return Estimate(
         counts=dict(counts), role_counts=dict(roles), usd_by_service=usd_by_service, total_usd=total,
         total_with_retries_usd=with_retries, max_call_usd=max_call, informative_full_pipeline_usd=informative,
+        expected_full_pipeline_usd=expected,
         missing_prices=frozenset(missing),
         within_cap=None if with_retries is None else with_retries <= plan.cap_usd,
         notes=tuple(notes))
@@ -118,6 +130,8 @@ def format_estimate(e: Estimate) -> str:
     lines.append(f"total USD, with retries: {_usd(e.total_with_retries_usd)}")
     if e.informative_full_pipeline_usd is not None:
         lines.append(f"informative full_pipeline USD (NOT a hard bound): {_usd(e.informative_full_pipeline_usd)}")
+    if e.expected_full_pipeline_usd is not None:
+        lines.append(f"expected full_pipeline USD (proxy, NOT a bound): {_usd(e.expected_full_pipeline_usd)}")
     if e.missing_prices:
         lines.append("missing prices: " + ", ".join(sorted(e.missing_prices)))
     lines.append(f"within cap: {e.within_cap}")

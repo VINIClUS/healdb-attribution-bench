@@ -30,6 +30,12 @@ chamada paga foi feita por este código até agora.
   - Bedrock: bytes UTF-8 do prompt × preço de entrada, mais `max_tokens` × preço de saída.
   - Na estimativa prévia, a chamada ACM do pipeline completo usa o limite de 10.000 caracteres, porque o texto ainda
     não existe. Na execução, a reserva usa o texto efetivo.
+  - **Consequência para o piloto.** O limite rígido dá 1.800 × US$ 0,05 = US$ 90 só no ACM do pipeline, acima do
+    teto de US$ 30. Por isso `estimate` informa `within cap: False`, e a simulação para no teto antes do fim.
+    `estimate` informa também um valor **esperado** (proxy, não limite): cada chamada do pipeline é precificada
+    pelo texto ACM fixo da V2 do mesmo medicamento, que tem a mesma estrutura. Com textos sintéticos de 400
+    caracteres, isso dá US$ 3,60 (`tests/test_campaign_pilot_scale.py`). A decisão de liberar a execução paga usa
+    o valor esperado, os textos reais e o fato de a execução paga parar no teto de qualquer forma.
 - **Retentativas:** as internas do botocore estão desligadas (`total_max_attempts=1`, uma única requisição HTTP por
   chamada). O runner repete só os códigos de erro listados no plano, até `retry.max_attempts`. Cada tentativa tem
   reserva, registro e identificador próprios, e está ligada à anterior por `wasInformedBy`.

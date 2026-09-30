@@ -3,6 +3,7 @@ from collections import Counter
 from pathlib import Path
 
 import pytest
+from test_campaign_fixtures import manifest_path
 import yaml
 
 from habench.campaign.calls import Condition, Role, Schedule, Service, sha256_text
@@ -13,7 +14,7 @@ from habench.campaign.texts import DictTextSource
 from habench.types import SealedError
 
 ROOT = Path(__file__).resolve().parents[1]
-FIXTURE = ROOT / "tests" / "data" / "campaign" / "split_manifest.csv"
+FIXTURE = manifest_path()
 
 
 def make_plan(**over: int) -> Plan:

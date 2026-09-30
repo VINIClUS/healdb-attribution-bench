@@ -59,7 +59,7 @@ gerar os cronogramas reais.
   paga é da sessão principal: `HAB_PAID_CALLS=1 … run --paid --budget-usd X`.
 
 ## Testes
-- `uv run pytest -q` → `255 passed, 3 warnings in 7.99s`. Os avisos são o `DeprecationWarning` de fork dos testes
+- `uv run pytest -q` → `257 passed, 3 warnings in 8.09s`. Os avisos são o `DeprecationWarning` de fork dos testes
   de concorrência do ledger e do store.
 
 ## Números re-derivados
@@ -69,7 +69,15 @@ gerar os cronogramas reais.
   - chamadas ACM do piloto: 600 + 1.800 = 2.400.
 - Contagens do cronograma do piloto (60 textos, 3 perfis, 10 repetições): 600 ACM isolado, 1.800 traduções,
   1.800 ACM do pipeline. Teste em `tests/test_campaign_schedule.py`.
-- Custos em US$ ainda não calculados: dependem dos textos reais e dos preços Bedrock.
+- Custos em US$ reais ainda não calculados: dependem dos textos reais e dos preços Bedrock.
+- Escala do piloto com textos sintéticos de 400 caracteres e preços fictícios
+  (`uv run pytest -s tests/test_campaign_pilot_scale.py`):
+  - limite rígido por tentativa: US$ 94,78 (ACM 91,20, dos quais o pipeline é 90,00 a US$ 0,05/chamada);
+  - com retentativas: US$ 284,33;
+  - `within cap: False`, e a simulação para no teto;
+  - pipeline esperado (proxy): US$ 3,60.
+
+  A execução paga reserva o custo exato de cada texto efetivo e não é afetada.
 
 ## Perguntas / BLOCKED
 - (nenhuma)
@@ -94,7 +102,5 @@ gerar os cronogramas reais.
   - `snapshots/v2/translate_eng_leaflet_section.parquet`, colunas `id_medication`, `ds_indication`.
 
   Os nomes assumidos estão em `campaign/texts.py`.
-- **`.gitignore`.** O padrão `data/` ignora `tests/data/`. O fixture sintético `tests/data/campaign/split_manifest.csv`
-  foi adicionado com `git add -f`. Sugiro `!tests/data/` no `.gitignore` (arquivo da sessão principal).
 - **Plano de campanha.** A sessão principal deve fixar os ids de modelo Bedrock e os preços por MTok numa cópia de
   `repro/campaign_plan.template.yaml` antes de qualquer execução paga.
