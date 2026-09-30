@@ -62,3 +62,20 @@ Registro cumulativo. Cada entrada traz data, seção do protocolo, descrição, 
 - **Efeito:** o piloto §9.2 não começa até a conta ser liberada.
   - A sessão principal repete uma sonda de 2 chamadas (pior caso US$0,002) antes de retomar.
   - Nada que dependa de chamadas pagas entra no relatório enquanto isso.
+
+## D7 — Decisões do SPEC relativas ao protocolo (GATE 2, 2026-09-30)
+
+Origem: lead β (R-ids de `docs/analise/00_analise_protocolo.md`), auditoria (A-ids de `docs/auditorias/gate2_spec.md`) e decisões da sessão principal (`docs/decisoes.md`, "GATE 2").
+
+| id | seção | desvio ou especificação | motivo |
+|---|---|---|---|
+| D7.1 | §11.1 | Cobertura primária só sobre associações alteradas (R13). As inalteradas alimentam o controle nulo. | No núcleo determinístico, os finais revelam a mudança. Não vale na campanha, onde `Q_u` não é trivial. |
+| D7.2 | §8 | Família P só catalogada (R20): sem chamadas novas nem simulador; referência `contrafactual_indisponivel`, fora dos denominadores. | Não há respostas armazenadas para as variantes de preparação. |
+| D7.3 | §11.3 | H2 entra no Holm com p = 1. O piloto dev/cal é exploratório (P-β2). | A campanha de teste não está autorizada. O FWER fica controlado, ao custo de poder. |
+| D7.4 | §6.2 | L3 ≡ L2 no núcleo determinístico, sem execução separada. | As referências repetem x0 quando não há variabilidade. |
+| D7.5 | §4.3, §14 | Níveis queimados (P-β1): todo valor citado em `docs/design/`, `docs/SPEC.md` ou nos exemplos fica fora da lista selada de teste. Inclui os candidatos 0,575 e 0,625 do desenho §C. | Esses valores foram expostos antes do congelamento. |
+| D7.6 | §12 | Os 20 textos do piloto de anotação saem de dev/cal (P-β4). | O guia pode ser pilotado antes de abrir o teste. |
+| D7.7 | §6.4, §7.4 | Identificação em R-C e sem vínculo ao código usa o espaço de variantes K (A07). H1b é relatada também com `K = ∅`. | O protocolo não fixa o modelo de "código/ambiente parcial". |
+| D7.8 | §11.1 | Calibração a 5% e guarda de H1b sobre o risco das categóricas comprometidas (A04). O risco literal também é relatado. | Uma lista longa de `alternativas` dilui o risco literal. |
+| D7.9 | §2.1, §11.3 | H1a com orçamento primário `b = 16` (A05). Variância zero é relatada como identidade por construção. | Com `b = 64` a não inferioridade é trivial. |
+| D7.10 | §8 | O exemplo público de §7.2 fica restrito a dev/cal (A12). | É público e cairia na região de H1a. |
