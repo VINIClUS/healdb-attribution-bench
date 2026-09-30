@@ -30,6 +30,9 @@ gates. Nobody can answer you interactively: when blocked, write it down and stop
 
 ## Delegation (Opus manages Sonnet)
 
+- **Headless sessions end when you end your turn**, and background subagents die with them. Run `hab-worker`
+  subagents in the foreground (blocking Agent calls), or keep working until every background one has finished.
+
 - Use the Agent tool with `subagent_type: "hab-worker"` (runs on Sonnet). Give each worker: goal, the exact
   files it owns (exclusive), spec/design sections, acceptance tests, commands to run.
 - At most 3 workers at a time. Never give two workers the same file.
