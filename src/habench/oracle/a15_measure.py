@@ -1,6 +1,8 @@
 """A15: cost of the identification reference on dev groups (run as a module; reads dev data only).
 
-    uv run python -m habench.oracle.a15_measure --groups 20 --L 3 --max-dev 2 --budget 60
+    uv run python -u -m habench.oracle.a15_measure --groups 3 --queries 2 --L 2 --max-dev 1 --budget 60
+
+(L = 3 or max-dev ≥ 2 do not finish in useful time: see docs/status/lead-beta.md, A15.)
 
 Builds the component contrast V1 → V2 (WHO space) on seeded dev groups, the truth of every changed query,
 and the identification in the cells that need U. Prints per-expansion and per-query statistics as JSON.
@@ -79,7 +81,7 @@ def main(argv: list[str] | None = None) -> int:
             "saturated": sum(r["saturated"] for r in rows), "mean_W_hi": statistics.mean([r["W_hi"] for r in rows]) if rows else None,
         }
     print(json.dumps({"args": vars(a), "seconds": round(time.perf_counter() - t0, 1), "queries": len(per_query),
-                      "expansions": cache.stats, "summary": summary}, indent=1, default=str))
+                      "expansions": cache.stats, "per_query": per_query, "summary": summary}, indent=1, default=str))
     return 0
 
 

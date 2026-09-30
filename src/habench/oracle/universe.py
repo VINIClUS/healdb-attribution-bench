@@ -23,7 +23,7 @@ from __future__ import annotations
 import itertools
 import json
 import time
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 
 from habench.oracle.contrast import has_alt
@@ -443,6 +443,17 @@ def symbolize(doc: dict, hier: Hierarchy, space: str, key_code: str, alpha: Alph
 
 
 # ---------------------------------------------------------------------- lifting (SPEC 8.3 W_lo)
+
+
+def signature(hier: Hierarchy, space: str, key_code: str, alpha: Alphabet) -> tuple:
+    """The key-independent part of an alphabet: the code pool replaced by its behaviours, position by position.
+    Two keys with the same signature have the same expansion up to renaming the codes (A15 memo)."""
+    return (alpha.es, alpha.cs, alpha.traits, alpha.es_cuts, alpha.cs_cuts, alpha.trait_levels, alpha.maps,
+            tuple(code_behavior(hier, space, key_code, alpha.maps, c) for c in alpha.codes))
+
+
+def relabel(b: Bundle, codes: Mapping[str, str]) -> Bundle:
+    return tuple((e, tuple((cs, codes[code]) for cs, code in cons)) for e, cons in b)
 
 
 def lift_doc(doc: dict, b: Bundle, hier: Hierarchy, space: str, key_code: str, alpha: Alphabet) -> dict:

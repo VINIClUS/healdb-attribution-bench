@@ -4,7 +4,8 @@
   observed, so U = the true evidence × the level/variant hypotheses (with the code link only variants
   deviate). There is no expansion; U is saturated and contains h*.
 - Cells without the full response (L1 and top-1-only views A2/C2/C4): U = symbolic bundles × hypotheses,
-  expanded by `oracle.universe` and memoized per (declared configs, space, key code, observation mode);
+  expanded by `oracle.universe` and memoized per (declared configs, space, observation mode) and symbolic
+  signature of the key (`universe.signature`: keys whose code pools behave alike share one expansion);
   W_lo by lifting each witness into the real group.
 
 Not covered yet (raise `NotImplementedError`; `truth.build_truth` leaves the cell out of the truth):
@@ -36,6 +37,8 @@ from habench.oracle.universe import (
     expand,
     hypotheses,
     lift_doc,
+    relabel,
+    signature,
     symbolize,
 )
 from habench.pipeline.catalog import Config
@@ -63,6 +66,7 @@ class Expansion:
     result: ExpansionResult
     families: dict[tuple, Family | None]
     seconds: float
+    key_code: str = ""
 
 
 @dataclass
@@ -81,28 +85,41 @@ class UniverseCache:
     def get(self, c: Contrast, hier: Hierarchy, key_code: str, mode: Mode) -> Expansion:
         th = true_hypothesis(c)
         k = (c.d0.items, c.d1.items, c.space, key_code, th, self.L, self.max_dev, mode)
-        if k not in self.store:
-            t = time.perf_counter()
-            truth = (th.x0, th.x1, th.variants0, th.variants1)
-            hyps = hypotheses(c.d0, c.d1, code_link=mode.code_link, max_dev=self.max_dev, true=truth)
-            if not any(_same(h, th) for h in hyps):
-                hyps.append(th)
-            alpha = alphabet(hyps, hier, c.space, key_code)
-            ev = BatchEval(hier, c.space, key_code)
-            res = expand(hyps, alpha, ev, L=self.L, time_budget=self.time_budget, max_bundles=self.max_bundles,
-                         reps_per_class=self.reps_per_class, frontier_by="declared",
-                         observe=mode.observer(hier, c.space, key_code, alpha))
-            fams = {}
-            for cls in res.classes:
-                D, tab, _ = cls
-                r = analyze(D, dict(zip(all_subsets(D), tab)))
-                fams[cls] = r.family if r.changed else None
-            sec = time.perf_counter() - t
-            self.store[k] = Expansion(hyps, alpha, res, fams, sec)
-            self.stats.append({"key_code": key_code, "mode": mode.name, "hypotheses": len(hyps),
-                               "alphabet": alpha.size(),
-                               "levels": res.levels, "saturated": res.saturated, "cut": res.cut,
-                               "core_runs": ev.runs, "seconds": round(sec, 2)})
+        if k in self.store:
+            return self.store[k]
+        t = time.perf_counter()
+        truth = (th.x0, th.x1, th.variants0, th.variants1)
+        hyps = hypotheses(c.d0, c.d1, code_link=mode.code_link, max_dev=self.max_dev, true=truth)
+        if not any(_same(h, th) for h in hyps):
+            hyps.append(th)
+        alpha = alphabet(hyps, hier, c.space, key_code)
+        sk = (k[:3] + k[4:], signature(hier, c.space, key_code, alpha))
+        if sk in self.store:
+            # same symbolic signature: reuse the expansion, renaming the witnesses' codes to this key's pool
+            base = self.store[sk]
+            codes = dict(zip(base.alpha.codes, alpha.codes))
+            res = base.result
+            classes = {cls: (relabel(b, codes), h) for cls, (b, h) in res.classes.items()}
+            self.store[k] = Expansion(hyps, alpha, ExpansionResult(classes, res.saturated, res.levels, res.cut),
+                                      base.families, time.perf_counter() - t, key_code)
+            self.stats.append({"key_code": key_code, "mode": mode.name, "memo_hit": base.key_code,
+                               "seconds": round(self.store[k].seconds, 2)})
+            return self.store[k]
+        ev = BatchEval(hier, c.space, key_code)
+        res = expand(hyps, alpha, ev, L=self.L, time_budget=self.time_budget, max_bundles=self.max_bundles,
+                     reps_per_class=self.reps_per_class, frontier_by="declared",
+                     observe=mode.observer(hier, c.space, key_code, alpha))
+        fams = {}
+        for cls in res.classes:
+            D, tab, _ = cls
+            r = analyze(D, dict(zip(all_subsets(D), tab)))
+            fams[cls] = r.family if r.changed else None
+        sec = time.perf_counter() - t
+        self.store[k] = self.store[sk] = Expansion(hyps, alpha, res, fams, sec, key_code)
+        self.stats.append({"key_code": key_code, "mode": mode.name, "hypotheses": len(hyps),
+                           "alphabet": alpha.size(),
+                           "levels": res.levels, "saturated": res.saturated, "cut": res.cut,
+                           "core_runs": ev.runs, "seconds": round(sec, 2)})
         return self.store[k]
 
 

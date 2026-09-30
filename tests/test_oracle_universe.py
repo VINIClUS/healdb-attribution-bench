@@ -3,7 +3,7 @@ import pytest
 from habench.oracle import toy
 from habench.oracle.contrast import make_contrast
 from habench.oracle.hybrids import Hybrids
-from habench.oracle.reference import UniverseCache, ident_fn, identify_query
+from habench.oracle.reference import UniverseCache, _mode, ident_fn, identify_query
 from habench.oracle.truth import CellSpec, build_truth
 from habench.oracle.universe import BatchEval, alphabet, hypotheses, symbolize
 from habench.pipeline.catalog import V1, V2
@@ -63,6 +63,21 @@ def test_l1_expansion_on_ex12(ex12):
     assert q.cell("L2-M", "R-C") == "identificado"
     assert not l1.saturated  # classes still grow at L = 2; ambiguity needs no saturation
     assert cache.stats and cache.stats[0]["hypotheses"] > 1
+
+
+def test_memo_by_symbolic_signature(ex12):
+    c, _ = ex12
+    mode = _mode(CellSpec.of("L1", "R-C"))
+    shared = UniverseCache(L=2, max_dev=0)
+    a, b = shared.get(c, HIER, "E11", mode), shared.get(c, HIER, "J45", mode)
+    assert shared.stats[1]["memo_hit"] == "E11"
+    fresh = UniverseCache(L=2, max_dev=0).get(c, HIER, "J45", mode)
+    assert set(b.result.classes) == set(fresh.result.classes) == set(a.result.classes)
+    assert b.alpha.codes == fresh.alpha.codes != a.alpha.codes
+    ev = BatchEval(HIER, "who", "J45")
+    for cls, (bundle, h) in list(b.result.classes.items())[:50]:
+        assert {code for _, cons in bundle for _, code in cons} <= set(b.alpha.codes)
+        assert ev.tables([bundle], h) == [cls[:2]]  # the renamed witness reproduces its class under J45
 
 
 def test_unsupported_cells_stay_out(ex12):
