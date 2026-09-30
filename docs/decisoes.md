@@ -84,3 +84,4 @@ A sessão principal reconferiu as seções alteradas:
 A suíte está verde no commit `188123a` do lead β: `tests/test_spec_examples.py` com 86 testes e o total com 512.
 
 O SPEC v0.2 é o documento normativo da onda 2 (β3 e γ). Correções posteriores entram como v0.2.x, com changelog, e só por decisão registrada aqui.
+- **Adendo.** O commit `0c90992` do lead β (EX-29, a ordem de saída de `top1`; EX-30, a condição de ordem da regra dummy 2) chegou depois da reconferência. Foi revisado e EX-29 recalculado à mão. A mudança só torna a regra 2 mais conservadora. Fica incluído na v0.2 aprovada (merge `d8bb90f`).
