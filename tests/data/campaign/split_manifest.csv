@@ -1,0 +1,5 @@
+group_id,partition,medications,n_medications,stratum,inclusion_prob
+gaaaaaaaaaaa1,dev,101;102,2,s1,0.5
+gaaaaaaaaaaa2,cal,201,1,s2,0.25
+gaaaaaaaaaaa3,test,301;302;303,3,s1,0.5
+gaaaaaaaaaaa4,reserve,401,1,s2,1.0
