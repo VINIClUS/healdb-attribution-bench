@@ -1,0 +1,175 @@
+{
+  "compared": "V1 vs O0605: sha256 of each .sql, raw and without lines starting with '-- Dump completed on'",
+  "files_in_common": 33,
+  "normalized_equal": 33,
+  "only_in_O0605": [],
+  "only_in_V1": [],
+  "raw_equal": 0,
+  "tables": {
+    "healdb_hd_active_ingredient.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "c886c3e052daf3f35c16df5fb89263a83afdc425473c55e0ead21dd5eb0e8ec9",
+      "raw_equal": false
+    },
+    "healdb_hd_active_ingredient_ext_id.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "1fdb3902e6c21f514b348eda5c3e8d743d7b4869f601a23ba8db366b47fb774f",
+      "raw_equal": false
+    },
+    "healdb_hd_company.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "eea3009827cf7fc8b6bb36523e8d95891445896831b804fbe6480b56acb18df1",
+      "raw_equal": false
+    },
+    "healdb_hd_dcb_classification.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "04282fa7b7685e9b2136848919a8c379f3deb1dcc2b50ae0e905ecb69c501cec",
+      "raw_equal": false
+    },
+    "healdb_hd_dcb_list.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "092288c89c8dd84faffb9d59fd666c021bbf3156d45da9df6e01bcc67c7ac2cd",
+      "raw_equal": false
+    },
+    "healdb_hd_drug_interaction.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "e303af39a7f104522b411a6c1ed0f2caeebd66df770864dc20ef76f32c2ca734",
+      "raw_equal": false
+    },
+    "healdb_hd_icd_category.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "49fb7d662ee5cc9590ab4f9b806c4313f21c8e7636d44f311d1d30c86a944a72",
+      "raw_equal": false
+    },
+    "healdb_hd_icd_group.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "be03501a6947740397a52d3d659f128eab898c958ac029d542dce110816478f3",
+      "raw_equal": false
+    },
+    "healdb_hd_icd_subcategory.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "f898abca0167adbb72e7136fb6f1bd6af5c19ae7149e6a60f664f39df986a6df",
+      "raw_equal": false
+    },
+    "healdb_hd_int_med_disease_api_response.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "d57939e2f65963b38f1aba4a0b2ff32dec3df14bbc8f4870115ff37742fa5ed2",
+      "raw_equal": false
+    },
+    "healdb_hd_int_med_disease_entity.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "5c2dab5a5597cfa1d12b2a6900624a817e1be09c3fd4efed0f2567a9ce89bd66",
+      "raw_equal": false
+    },
+    "healdb_hd_int_med_disease_trait.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "64219ed79e5e99a63b330ebb87a01bc3ce89fbba5d952103746c46121e3a12a9",
+      "raw_equal": false
+    },
+    "healdb_hd_medication.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "731fbbff5b9d964616e957b006d9b083cb2dccc5176cd9dba37b4168522fcf87",
+      "raw_equal": false
+    },
+    "healdb_hd_medication_active_ingredient.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "60fd062ca99b2e1d7efdf0dfac4cb30bf61bee2b061eaf84397c712b0e8f9cf8",
+      "raw_equal": false
+    },
+    "healdb_hd_medication_disease.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "fa3fa3072b372f7bc98d34b3b6368622201956791175f2d5228bd323367647dc",
+      "raw_equal": false
+    },
+    "healdb_hd_medication_disease_extend.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "e3559d8747f1ba6ac4036aa7d0ef17ed542544a0575a1d889522709ddb18f66d",
+      "raw_equal": false
+    },
+    "healdb_hd_medication_drug_leaflet.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "a74e89ae5bd9e20dc53354e1d8b3624d2d8e9cd904a11563f2188823154ce97d",
+      "raw_equal": false
+    },
+    "healdb_hd_regulatory_category.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "72c76fcbf192b0c0b9e291b9bc31fa338ac4ca076215173cb4b556871c1b8e9a",
+      "raw_equal": false
+    },
+    "healdb_hd_symptom.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "505da0c2b33bcb4a18e7345ac36bd70fe7ee7bd558f20bd701286f11f87fbfb7",
+      "raw_equal": false
+    },
+    "healdb_hd_therapeutic_class.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "32b2c83b4a03ab1c63d1298314513b0a79a5c11f9d0f484a83ad769a431c2987",
+      "raw_equal": false
+    },
+    "healdb_hd_translate_eng_active_ing.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "bec25d9251736b306e5eceb77e60aa8f47623c0ce1acce95a4b3848f016a9293",
+      "raw_equal": false
+    },
+    "healdb_hd_translate_eng_leaflet_section.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "acd63714c81f7a6a5b0fda9bd0950ca5bd2ce95403164171bf5f75990161cd72",
+      "raw_equal": false
+    },
+    "healdb_hd_type_ext_id.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "670ee00fcc9f3e17cc1ad1911ec44ff5d1485b322ff3f3efa87ba93f03e70f01",
+      "raw_equal": false
+    },
+    "healdb_hd_wrk_clinical_trials.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "4257721ce1ad98992afd961b1fefd55cbc9a465482ee0587bb4cb050cd274948",
+      "raw_equal": false
+    },
+    "healdb_hd_wrk_drug_leaflet.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "0afa3970ccdf0d0b71dc573178af169ff4855cce30a344262ceaa125f249ad82",
+      "raw_equal": false
+    },
+    "healdb_hd_wrk_drug_leaflet_dedup.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "21a6d7d76afc3a92966c35262e530b08298dd6648d8ff0e530b3e8563c62f1ba",
+      "raw_equal": false
+    },
+    "healdb_hd_wrk_med_leaflet_section.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "05e9d1c56e84398fc98845bc818a9920bfceefaa5ef749136c1710b89c2d9a27",
+      "raw_equal": false
+    },
+    "healdb_hd_wrk_medication.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "d442afc94321fdc5e8e743016e809938be6158c695bc39514fc6173c52167249",
+      "raw_equal": false
+    },
+    "healdb_hd_wrk_medication_active_ing.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "83da11086b2afa46f154436cf2f4a8cbff4fc5637b8488d7393f1d22bf9e7096",
+      "raw_equal": false
+    },
+    "healdb_hd_wrk_symptom.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "97b2eb521173edf364c364b3609042c31c73038953d12dffe94b48ee069942ab",
+      "raw_equal": false
+    },
+    "healdb_hd_wrk_translate_eng_active_ing.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "c2d6200bd84b2f2e94e04a3170edb41abb8805ac60979076aa9b3fe21b28d3fb",
+      "raw_equal": false
+    },
+    "healdb_hd_wrk_translate_eng_active_ing_meta.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "155b8519bbad3d5415382520ed5fc0b57003ddd54581cdc9effdd5cf9fe91167",
+      "raw_equal": false
+    },
+    "healdb_hd_wrk_wikidata_ext_id.sql": {
+      "normalized_equal": true,
+      "normalized_sha256": "1e53a9c026f0aea480d666a0dd4396745afa84ed7a1a55c0601523f249653484",
+      "raw_equal": false
+    }
+  }
+}
