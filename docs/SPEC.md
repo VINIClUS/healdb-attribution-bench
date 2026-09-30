@@ -54,14 +54,17 @@ Seja `nodot = code.replace(".", "")`, `cat` o conjunto de categorias (3 caracter
 | nível de `map` | chave produzida | quando não há chave |
 |---|---|---|
 | `cm_gated` | o código CM, se `nodot ∈ cat` ou `nodot ∈ subcat` ou `nodot[:3] ∈ cat` (portão V1) | o registro é descartado pelo portão |
-| `cm_ungated` | o código CM, sempre | – |
-| `who_exact_fb` | `nodot` se `nodot ∈ subcat` ou `nodot ∈ cat`; senão `nodot[:3]` se `nodot[:3] ∈ cat` | `unmapped` (V2 `NO_MAP`) |
-| `who_exact` | `nodot` se `nodot ∈ subcat` ou `nodot ∈ cat` | `unmapped` |
-| `who_cat3` | `nodot[:3]` se `nodot[:3] ∈ cat` | `unmapped` |
+| `cm_ungated` | o código CM, sempre | no espaço OMS, sem projeção `who_exact_fb` → `unmapped` |
+| `who_exact_fb` | `nodot` se `nodot ∈ subcat` ou `nodot ∈ cat`; senão `nodot[:3]` se `nodot[:3] ∈ cat` | o registro reprova no portão (V2 `NO_MAP`) |
+| `who_exact` | `nodot` se `nodot ∈ subcat` ou `nodot ∈ cat` | o registro reprova no portão |
+| `who_cat3` | `nodot[:3]` se `nodot[:3] ∈ cat` | o registro reprova no portão |
 
-- Um registro aprovado `unmapped` é contado à parte (`RunResult.unmapped`, `core.py:318`). Ele não gera chave
-  própria e não afeta a presença de nenhuma chave: uma chave que nenhum registro aprovado produz é `ABSENT` (1.4),
-  mesmo que o registro que a produzia antes tenha virado `unmapped` (A09, EX-27).
+- Nos níveis `who_*`, o portão do nível é a própria projeção (`catalog.py:73-75`, `core.py:208-230`): um código sem
+  projeção reprova em `map` e não chega a ser `unmapped`.
+- Um registro **aprovado** sem chave no espaço (só `cm_ungated` no espaço OMS) é `unmapped`, contado à parte
+  (`RunResult.unmapped`, `core.py:318`). Ele não gera chave própria e não afeta a presença de nenhuma chave.
+- Uma chave que nenhum registro aprovado produz é `ABSENT` (1.4), qualquer que seja o destino do registro que a
+  produzia antes: reprovado em `map` ou `unmapped` (A09, EX-27).
 - Nenhuma projeção tenta um prefixo de 4 caracteres: `E11.65` vai para `E11`, não para `E116` (V1 e V2).
 
 ### 1.3 Espaço de comparação por contraste (R02)
@@ -79,9 +82,9 @@ Seja `nodot = code.replace(".", "")`, `cat` o conjunto de categorias (3 caracter
 | código | `cm_gated` | `cm_ungated` | `who_exact_fb` | `who_exact` | `who_cat3` |
 |---|---|---|---|---|---|
 | `E11.9` | `E11.9` | `E11.9` | `E119` | `E119` | `E11` |
-| `E11.65` | `E11.65` | `E11.65` | `E11` | unmapped | `E11` |
+| `E11.65` | `E11.65` | `E11.65` | `E11` | sem projeção | `E11` |
 | `C61` | `C61` | `C61` | `C61` | `C61` | `C61` |
-| `D49.2` | descartado | `D49.2` | unmapped | unmapped | unmapped |
+| `D49.2` | descartado | `D49.2` | sem projeção | sem projeção | sem projeção |
 
 A chave de `C61` do medicamento 4 é `AssocKey(4, "ICD-10-CM", "acm:3.0.0.20231001", "C61")` no espaço CM e
 `AssocKey(4, "ICD-10-WHO", "hier:toy", "C61")` no espaço OMS.
@@ -103,8 +106,9 @@ inelegíveis entram no fluxo de elegibilidade, com o motivo, e nunca viram "apar
 
 **EX-27 (`unmapped` não é ausência própria, A09).** Uma entidade com `E11.65` 0,80, preset V1 com `map`
 `who_exact_fb` → `who_exact`, espaço OMS. Em x0, a chave `E11` está presente. Em x1, `E11.65` não tem projeção
-exata: o registro aprovado vai para `unmapped = {E11.65}` e a chave `E11` fica `ABSENT`. A consulta `E11` mudou, com
-família `{{map}}`.
+exata: o registro reprova em `map` (`failed = {map}`) e a chave `E11` fica `ABSENT`. A consulta `E11` mudou, com
+família `{{map}}`. Com `map = cm_ungated` e uma entidade `D49.2` aprovada, no espaço OMS, o registro vai para
+`unmapped = {D49.2}` e nenhuma chave `D49` aparece nem fica ausente por causa dele.
 
 ## 2. Três níveis de igualdade (§5.2)
 
@@ -1231,7 +1235,7 @@ Todos na população de contrastes de teste da família indicada, com o mesmo m�
   - denominadores primários sobre consultas alteradas (R13).
 - **§B1:**
   - `v2` inclui o filtro `DX_NAME`; `neg_only` não;
-  - `sel` por grupo de `Id` em `per_entity_any` (R30);
+  - `sel = top1` sempre por grupo de `Id`, qualquer que seja `occ`, como em `pipeline/core.py` (R30, A02);
   - patches são de estágio `acm` e aparecem como handles opacos.
 - **§B2 / §E:** ∅ e `D` contam no orçamento (R08).
 - **§C:**
@@ -1239,6 +1243,7 @@ Todos na população de contrastes de teste da família indicada, com o mesmo m�
   - o exemplo de §7.2 não é `test_only`;
   - `V1_TO_V2` fora do conjunto confirmatório de teste (D2).
 - **L3 ≡ L2** no núcleo determinístico.
+- **§E (H1a):** orçamento primário `b = 16`, não 64 (A05).
 
 ## 15. Índice de exemplos
 
@@ -1249,5 +1254,38 @@ Todos na população de contrastes de teste da família indicada, com o mesmo m�
   EX-14 (bundle), EX-15 (dummy), EX-16 (BFS e orçamento).
 - **Identificação:** EX-11 (divergência HYPOTHETICAL), EX-12 (testemunhas).
 - **Lastro, perfis e esquema:** EX-21 (lastro), EX-22 (perfis), EX-23 (validação de saída).
-- **Pontuação:** EX-S01 a EX-S35.
+- **Unmapped:** EX-27 (`who_exact_fb → who_exact`).
+- **Dummy com `Id` duplicado:** EX-25 (`sel`), EX-26 (`occ`).
+- **BFS com inadmissíveis:** EX-28.
+- **Identificação com `h* ∉ U`:** EX-24.
+- **Pontuação:** EX-S01 a EX-S53.
 - **Métricas e estatística:** EX-17 (métricas), EX-18 (Holm), EX-19 (evento zero), EX-20 (valor-p de NI).
+
+## 16. Mudanças v0.1 → v0.2 (GATE 2)
+
+Uma linha por achado de `docs/auditorias/gate2_spec.md`. Onde a decisão da sessão principal (`docs/decisoes.md`,
+"GATE 2") difere da auditoria, vale a decisão.
+
+| id | mudança | onde |
+|---|---|---|
+| A01 | `W` calculado sobre `U ∪ {h*}`; `W_hi` sobre `U ∪ {classe(h*)}`, `W_lo ⊆ W_hi` por construção; saturação efetiva exige `classe(h*) ∈ U`; prova da partição dos estados; EX-24 (`h* ∉ U` → `indeterminado`) | 8.1, 8.3, EX-24 |
+| A02 | o núcleo é normativo: `top1` sempre por grupo de `Id` (último candidato por código, desempate por colação MySQL), traços de `per_entity_any` de todas as entidades do `Id`; regras dummy 1 (variantes de patch), 2 (vencedor do grupo de `Id`), 3 (`Id` único com entidade única) e 4 reescritas, regras 0 e 5 novas; EX-25, EX-26 | cabeçalho, 3.1, 3.2, 4.6, EX-04, EX-25, EX-26 |
+| A03 | tabela de aceitação por tipo de certificado e passo 0 do avaliador (descarte fora do log ou fora da célula); regra de derivação por traço; cobertura módulo dummies; EX-21 (e)–(h) | 9.2, EX-21 |
+| A04 | `risco_comprometido` (sem `nao_comprometido`) na calibração e na guarda de H1b; risco literal também relatado | 10.2, 13.1, 13.5, EX-17 |
+| A05 | H1a com `b = 16` primário; `trace` de avaliações do log aceito em L2-R; "identidade por construção"; critério descritivo de armazenamento e tempo | 7.4, 9.2, 13.1 |
+| A06 | H1b: denominador comum aos dois braços, `|Q_ind|` por braço, sensibilidade com `indeterminado` não coberto, estimador conjunto por consulta, guarda no percentil 97,5, braço sem categóricas com risco 0, A1 fora dos estratos | 13.1 |
+| A07 | K registrado como decisão, com citação de F1 por hipótese; sensibilidade `K = ∅`; parte das execuções da família I realiza `alt` | 4.3, 13.1 |
+| A08 | α = 0,025 nos limites de evento zero (EX-19 recalculado); dimensionamento a `1 − 0,025/3`; `p_H2 = max(p_i, p_ii)` | 13.1, 13.4, 13.6 |
+| A09 | `unmapped` não gera chave; a chave que deixa de ser produzida fica `ABSENT`; EX-27 | 1.2, 1.4, EX-27 |
+| A10 | desfechos secundários de score, entity_score, classe e granularidade definidos; `low_conf_thr` e `icd_hi` só aí | 2.1 |
+| A11 | A6 redefinida como `trace_winners` (só os vencedores de `top1` no traço) | 7.2 |
+| A12 | X(iii) só em dev/cal | 12 |
+| A13 | passo de completude da BFS sobre inadmissíveis pulados (EX-28); necessidade 0 sem híbridos executáveis; "trace" fora da definição de necessidade | 6.3, 9.3, EX-28 |
+| A14 | certificado falso → `errado` em toda célula com V; EX-S36 | 9.3 |
+| A15 | sem mudança no SPEC; medições na β3 (decisão GATE 2) | – |
+| A16 | desvios registrados pela sessão principal (D7.1–D7.10); o SPEC os cita | 10, 13, 12 |
+| A17 | sem mudança (H2 com p = 1 mantido) | 13.3 |
+| A18 | justificativa da cobertura só sobre alteradas, e sua não validade na campanha | 10.1 |
+| A19 | sem mudança no SPEC; testes diferenciais na β3; a referência de teste segue a semântica v0.2 | `tests/test_spec_examples.py` |
+| A20 | geração e compromisso da lista selada (grade, sorteio, SHA-256); categóricos sem nível de teste; x0 de teste é o preset | 4.1 |
+| A21 | EX-05 "–" explícito; `hier:` + 16 hex; resposta incompleta em `UNAVAILABLE`; células N1/N2; variante real em replay; classe de `map` relativa à chave; remissões fora de escopo; EX-S37–EX-S53; orientação `contrafactual_indisponivel`; referência N confirmada pelo oráculo | cabeçalho, 1.1, 1.4, 3.x, 5.4, 7.1, 8.2, 9.3, 10.2, 12 |
