@@ -1,0 +1,218 @@
+{
+  "compared": "text[BeginOffset:EndOffset] == Text in code points, entities and attributes; only responses with entities are counted; coverage = union of span intervals / text length",
+  "run_2024": {
+    "model_versions": {
+      "2.7.0.20231001": 7447
+    },
+    "phases": [
+      {
+        "end_utc": "2024-06-15T17:56:51Z",
+        "ids": null,
+        "n": 7447,
+        "phase": "1",
+        "start_utc": "2024-06-15T15:57:27Z"
+      }
+    ],
+    "raw_0327_translation_check": {
+      "chars_covered": 1141856,
+      "chars_total": 3651956,
+      "failing_examples": [],
+      "frac_covered": 0.31267,
+      "responses_all_spans_ok": 7159,
+      "responses_with_entities": 7159,
+      "spans": 106589,
+      "spans_ok": 106589
+    },
+    "raw_current_translation_check": {
+      "chars_covered": 1141856,
+      "chars_total": 3661306,
+      "failing_examples": [
+        3205,
+        4139
+      ],
+      "frac_covered": 0.311871,
+      "responses_all_spans_ok": 7157,
+      "responses_with_entities": 7159,
+      "spans": 106589,
+      "spans_ok": 106528
+    }
+  },
+  "translation_0327_vs_v1": {
+    "different": 2,
+    "different_ids": [
+      3205,
+      4139
+    ],
+    "identical": 7471
+  },
+  "v1": {
+    "hypotheses": {
+      "indication_only": {
+        "chars_covered": 2867811,
+        "chars_total": 3967463,
+        "failing_examples": [
+          1,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "frac_covered": 0.722832,
+        "responses_all_spans_ok": 8,
+        "responses_with_entities": 7189,
+        "spans": 235557,
+        "spans_ok": 118871
+      },
+      "raw_indication": {
+        "chars_covered": 2867811,
+        "chars_total": 3672824,
+        "failing_examples": [
+          1,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "frac_covered": 0.780819,
+        "responses_all_spans_ok": 0,
+        "responses_with_entities": 7189,
+        "spans": 235557,
+        "spans_ok": 78
+      },
+      "v1_reconstructed": {
+        "chars_covered": 2867811,
+        "chars_total": 7761312,
+        "failing_examples": [],
+        "frac_covered": 0.369501,
+        "responses_all_spans_ok": 7189,
+        "responses_with_entities": 7189,
+        "spans": 235557,
+        "spans_ok": 235557
+      }
+    },
+    "model_versions": {
+      "3.0.0.20231001": 7447
+    },
+    "phases": [
+      {
+        "end_utc": "2025-05-29T07:07:34Z",
+        "ids": null,
+        "n": 7427,
+        "phase": "1",
+        "start_utc": "2025-05-29T03:20:46Z"
+      },
+      {
+        "end_utc": "2025-05-29T10:30:42Z",
+        "ids": [
+          298,
+          1093,
+          2188,
+          2201,
+          3297,
+          3298,
+          3300,
+          3302,
+          3819,
+          3866,
+          4098,
+          4825,
+          7294,
+          7683,
+          8763,
+          8764,
+          10036,
+          10331
+        ],
+        "n": 18,
+        "phase": "2",
+        "start_utc": "2025-05-29T10:29:03Z"
+      },
+      {
+        "end_utc": "2025-05-29T17:25:12Z",
+        "ids": [
+          3205,
+          4139
+        ],
+        "n": 2,
+        "phase": "3",
+        "start_utc": "2025-05-29T17:25:08Z"
+      }
+    ],
+    "responses_without_entities": 258,
+    "text_state": "inferido_compativel",
+    "texts_over_10000_chars": {
+      "ids": [
+        298,
+        1093,
+        2188,
+        2201,
+        3205,
+        3297,
+        3298,
+        3300,
+        3302,
+        3819,
+        3866,
+        4098,
+        4139,
+        4825,
+        7294,
+        7683,
+        8763,
+        8764,
+        10036,
+        10331
+      ],
+      "n": 20
+    }
+  },
+  "v1_md_code_system": {
+    "dotted": 38132,
+    "nodot_exact_in_hierarchy": 23301,
+    "rows": 43194
+  },
+  "v2": {
+    "ds_text_submitted_check": {
+      "chars_covered": 1447063,
+      "chars_total": 3948429,
+      "failing_examples": [],
+      "frac_covered": 0.366491,
+      "responses_all_spans_ok": 7170,
+      "responses_with_entities": 7170,
+      "spans": 119302,
+      "spans_ok": 119302
+    },
+    "model_versions": {
+      "3.2.0.20251001": 7447
+    },
+    "phases": [
+      {
+        "end_utc": "2026-01-01T00:02:30Z",
+        "ids": null,
+        "n": 7016,
+        "phase": "A",
+        "start_utc": "2025-12-31T21:05:32Z"
+      },
+      {
+        "end_utc": "2026-01-04T19:18:14Z",
+        "ids": null,
+        "n": 431,
+        "phase": "B",
+        "start_utc": "2026-01-04T19:06:42Z"
+      }
+    ],
+    "responses_without_entities": 277,
+    "submitted_equal_to_v1_reconstruction": 0,
+    "text_state": "armazenado"
+  }
+}

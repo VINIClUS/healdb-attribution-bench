@@ -7,10 +7,10 @@ dist/
 *.egg-info/
 
 # derived data, truth and runs live outside the repo (HAB_DATA_DIR); never commit them here
-data/
-truth/
-views/
-runs/
+/data/
+/truth/
+/views/
+/runs/
 
 # local-only settings and secrets
 .claude/settings.local.json

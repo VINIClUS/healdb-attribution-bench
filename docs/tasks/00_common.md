@@ -19,12 +19,12 @@ gates. Nobody can answer you interactively: when blocked, write it down and stop
   data `/home/vinicius/hab-data`, dumps `/home/vinicius/healdb-reconstrucao/x`, workspace
   `/home/vinicius/healdb-reconstrucao`. Python code reads `HAB_DATA_DIR`, `HAB_DUMPS_DIR`, `HAB_WORKSPACE`
   from `os.environ` with those literal defaults.
-- Allowed shell commands: `uv`, `git`, `flock`, `ls`, `cat`, `head`, `tail`, `wc`, `find`, `grep`, `sha256sum`,
+- Allowed shell commands: `uv`, `git`, `ls`, `cat`, `head`, `tail`, `wc`, `find`, `grep`, `sha256sum`,
   `md5sum`, `mkdir`, `cp`, `mv`, `diff`, `sort`, `python3`, `unzip -l`, `unzip -p`, `date`, `echo`, `pdftotext`,
   `touch`, `rm`. No Docker (the main session runs Docker steps). Run Python through `uv run`.
 - Run `uv sync` once in your worktree before testing.
-- Heavy data runs: `flock /home/vinicius/hab-data/.heavy.lock uv run pytest -m dumps ...` (15 GiB RAM shared by
-  several sessions).
+- Heavy data runs: `uv run pytest -m dumps <files>`, one at a time per lead (15 GiB RAM shared by several
+  sessions). The default `uv run pytest` excludes `dumps`.
 - Dependencies: to add one, write `REQUEST: dependency <name> — <why>` in your status file and continue with
   what you can; the main session edits `pyproject.toml`.
 
