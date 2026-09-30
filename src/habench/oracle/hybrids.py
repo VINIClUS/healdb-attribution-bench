@@ -24,7 +24,7 @@ from habench.pipeline.catalog import Config, Level
 from habench.pipeline.core import CM, WHO, RunResult
 from habench.pipeline.evidence import Evidence
 from habench.pipeline.mapping import Hierarchy
-from habench.oracle.contrast import Contrast
+from habench.oracle.contrast import Contrast, has_alt
 from habench.types import AssocKey, Presence
 
 ALT_LEVEL = {"trait": {"v1": "v1_hyp_le_0.6"}, "occ": {"last_upsert": "first_upsert"}, "map": {"cm_gated": "cm_ungated"}}
@@ -36,8 +36,8 @@ class Inadmissible(ValueError):
 
 def realize(f: str, level: Level, variant: str) -> Level:
     """The core level that implements (level, variant) of factor f."""
-    if variant != "alt":
-        return level
+    if variant != "alt" or not has_alt(f, level):
+        return level  # levels without an `alt` variant behave as `std` (SPEC 4.3)
     if f in catalog.THRESHOLDS:
         return float(np.nextafter(float(level), 2.0))
     return ALT_LEVEL[f][level]
