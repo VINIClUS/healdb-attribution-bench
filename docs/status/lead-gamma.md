@@ -1,37 +1,68 @@
 # Status — lead γ
 
 ## Estado
-Onda (a) em andamento: contrato de métodos e `Env` de tabela prontos; workers de busca, isolamento e BugDoc lançados.
+Onda (a) concluída; (b) em andamento (vistas prontas; broker/RPC e cenários com workers); M (T13) escrito;
+falta T21 runner e o teste de ponta a ponta de M contra o oráculo.
 
 ## Feito
-- `src/habench/methods/base.py`: protocolos `Env`/`Method` (SPEC §11.1), `Explanation`, `Certificate`, `Query`,
-  `EvalResult` com traço em dados simples (`TraceRecord`, sem tipos de `habench.pipeline`), `Unavailable(reason)`
-  com motivos `inadmissible` / `no_replay` / `not_expressible` / `not_visible`, `BudgetExhausted`, validação EX-23.
-- `src/habench/env/table.py`: `Ledger` (regras de orçamento e cache de §7.4, compartilhadas com o broker) e
-  `TableEnv` (dublê por tabela-verdade).
-- `tests/test_env_contract.py`: contrato de §7.3/§7.4 parametrizado por implementação de `Env` (o broker T11 entra
-  na mesma lista).
+- `methods/base.py`: contrato `Env`/`Method` (SPEC §11.1), `Explanation`/`Certificate`/`Query`, `EvalResult` com
+  traço em dados simples (`TraceRecord`), `PresenceMap` (UNAVAILABLE por medicamento, §1.4), `Unavailable(reason)`
+  (`inadmissible`, `no_replay`, `not_expressible`, `not_visible`), `BudgetExhausted`, validação EX-23.
+- `env/table.py`: `Ledger` (orçamento, cache, handles inertes, recusas de §7.3/§7.4 — o broker reusa) e `TableEnv`.
+  `tests/test_env_contract.py`: contrato parametrizado por implementação.
+- T12 `methods/search.py`: BFS de referência (§6.3), conjunta, poda por dummy, completude sobre inadmissíveis.
+  Testes: EX-16, EX-28 (a/b), propriedade contra referência ingênua O(3^n), e **igualdade com
+  `oracle.families.reference_bfs` do β** (avaliações, famílias, completude, esgotamento).
+- B0, B1, B3 (`methods/b0.py`, `b1.py`, `b3.py`); B2 depende das vistas materializadas (próximo).
+- T15 `methods/bugdoc_adapter.py`: Stacked Shortcut standalone vendorizado. Fidelidade: testes upstream passam
+  (subprocesso); Exemplo 1 do artigo recupera `{LibraryVersion=2.0}` com **2** execuções (a linha que duplica CPg é
+  memoizada pelo código); Teoremas 1 e 2 como propriedades; Teorema 5 **falha** no código vendorizado
+  (`xfail(strict)` com contraexemplo: k=2, falha = (p0=0) ∨ (p0=1 ∧ p2=2), CPf=(0,0,2,0,0); o código nunca
+  restaura `cf` entre instâncias boas). Diferença semântica documentada no módulo ("causa definitiva" do BugDoc ×
+  "suficiente no contexto x0" do SPEC).
+- Isolamento `views/isolation.py`: audit hook (arquivos fora da vista, verdade, código dos módulos proibidos,
+  sockets, subprocessos, ctypes, escrita fora de scratch; imports de pipeline/oracle/scenarios) e `scan_leaks`
+  (nomes e conteúdo descompactado gz/zip). Achados: import em cache não dispara o evento `import` (por isso
+  `install` recusa se um módulo proibido já foi carregado); um `Pipe` criado antes do hook continua funcionando.
+- T10 `views/layout.py` (ids HMAC, manifest, lado do broker na verdade), `views/profiles.py`, `views/build.py`,
+  `repro/evidence_views.yaml`: cadeia byte a byte L1 ⊂ L2-R ⊂ L2-M, ablações A1–A6, C1–C4, mtimes constantes,
+  ordem embaralhada, varredura de vazamento.
+- T13 `methods/m.py` + `methods/evidence_rules.py` (escrito pelo lead): inventário; declarado × executado (com
+  vínculo: comparação; sem vínculo: hipóteses testáveis de divergência de nível de §4.3, `on`/`off`, ≤ 3, filtradas
+  pelos finais e pelos traços armazenados); BFS conjunta por hipótese; regras dummy corretas e incompletas do lado do
+  método (regra 0 para patches, regra 1 em faixa fechada); regras de irrelevância de par/variante; saída consciente
+  de identificação (`alternativas` quando hipóteses consistentes dão famílias distintas); sem replay, V só quando
+  `final` + `dummy` cobrem o reticulado. Botão `rigor` (`strict`/`lenient`) para a calibração em cal (§13.5).
+  Testes: EX-07, EX-11 (sem vínculo → `alternativas` com 2 famílias; com vínculo → V; L2-M−A3 → traço refuta a
+  história declarada → V), EX-12 em R-C com dummy, faixa HYPOTHETICAL oculta, orçamento, replay inválido,
+  inadmissível.
 
 ## Em andamento
-- T12 `methods/search.py` (worker), isolamento `views/isolation.py` (worker), T15 `methods/bugdoc_adapter.py` (worker).
+- T11 broker + RPC isolado (worker).
+- T9 cenários N/F/M/O/X/I e catálogo (worker).
 
 ## Próximo
-- T14 B3, B0/B1/B2 contra o `TableEnv`.
-- (b) após as interfaces do β em main: T10 vistas, T11 broker, T9 cenários.
-- (c) T13 M, T21 runner.
+- T21 runner (matriz eficiente, lote retomável em dev/cal, smoke de 5 grupos).
+- Teste de aceitação de M: igual ao oráculo em 100% dos casos em L2-M × R-A com orçamento ilimitado.
+- B2 sobre artefatos materializados.
 
 ## Testes
-- `uv run pytest -q tests/test_env_contract.py tests/test_methods_base.py` → 24 passed.
+- `uv run pytest -q` → 650 passed, 3 xfailed (antes de M); `tests/test_methods_m.py` → 10 passed.
 
 ## Números re-derivados
-(nenhum ainda)
+- Exemplo 1 do BugDoc: 2 execuções novas (`uv run pytest -q tests/test_methods_bugdoc.py`).
 
 ## Perguntas / BLOCKED
 (nenhuma)
 
 ## Desvios propostos
-- `Explanation` ganhou o campo `notes: tuple[str, ...]` (não pontuado), para registrar família parcial e motivos de
-  invalidação. O esquema de §11.1 fica intacto nos demais campos.
+- `Explanation.notes` (não pontuado) para inventário, hipóteses e motivos de invalidação.
+- B3: quando nenhum singleton é suficiente e algum complemento leave-one-out é suficiente, B3 não procura os
+  conjuntos intermediários e responde `informacao_insuficiente` (`ambiguidade`). O desenho §D não fixa esse caso.
+- BFS: todo `Unavailable` (inclusive `no_replay`/`not_expressible`) conta como "desconhecido" para a completude
+  (leitura conservadora). A poda por dummy nunca esconde um inadmissível no núcleo real, porque a admissibilidade só
+  depende dos fatores de preparação e as regras dummy nunca certificam fatores de preparação (regra 0).
+- N1/N2: `final` é o mapa de presença com `schema` `md_v1`/`md_v2`, não as linhas históricas de `md`.
 
 ## REQUEST
 (nenhum)

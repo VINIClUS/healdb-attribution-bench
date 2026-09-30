@@ -56,6 +56,7 @@ from habench.methods.search import SearchResult, bfs
 from habench.types import AssocKey, OutputState, Presence
 
 MAX_DIVERGENT = 3  # SPEC 4.3: at most 3 factors with a divergent level or alt variant per history
+PREP = frozenset({"dup_ind", "mask_drug", "wow_rewrite", "cut10k", "translation"})  # prep factors (SPEC 4.1)
 TRAIT_STAGES = {"trait_veto", "trait_hyp", "trait_required", "trait_type"}
 
 
@@ -77,6 +78,7 @@ class Inventory:
     evidence: Evidence | None
     traces: tuple[TraceSig, TraceSig] | None  # stored x0/x1 traces (L2-M), as signatures
     full_traces: bool  # `trace` (every record) rather than `trace_winners`
+    responses_differ: bool  # the x0 and x1 ACM responses differ (hashes or visible responses)
 
     def notes(self) -> tuple[str, ...]:
         out = ["inventory:" + ",".join(sorted(self.kinds))]
@@ -163,7 +165,11 @@ def inventory(env: Env) -> Inventory:
             if t0 is not None and t1 is not None:
                 traces, full = (t0, t1), is_full
             break
-    return Inventory(kinds, cfg, executed, evidence, traces, full)
+    differ = evidence is not None and not all(evidence.raw_equal.values())
+    if "hashes" in kinds:
+        h0, h1 = _read_json(env, "hashes", "x0"), _read_json(env, "hashes", "x1")
+        differ = differ or (h0 or {}).get("acm_response") != (h1 or {}).get("acm_response")
+    return Inventory(kinds, cfg, executed, evidence, traces, full, differ)
 
 
 # ---------------------------------------------------------------------- hypotheses
@@ -223,7 +229,12 @@ class M:
                 out[q.qid] = abstain(q.qid, OutputState.AUSENCIA_DE_MUDANCA, "", *notes)
             else:
                 open_q.append(q)
-        if open_q:
+        if open_q and inv.responses_differ and not any(h.startswith("ev:") or h in PREP for h in D):
+            # The responses changed but no handle can change them (e.g. L1 hides patch handles): an unseen
+            # evidence factor is in D, so no family over the visible handles can be claimed.
+            out |= {q.qid: abstain(q.qid, OutputState.INFORMACAO_INSUFICIENTE, EVIDENCIA_OCULTA, *notes,
+                                   "responses differ without an evidence handle") for q in open_q}
+        elif open_q:
             out |= self._changed(env, inv, D, open_q, notes)
         return {k: validated(v) for k, v in out.items()}
 
@@ -372,3 +383,11 @@ class M:
                 for s, r in res.results.items()
             )
         return Explanation(q.qid, OutputState.EXPLICACAO_VERIFICADA, (canonical_family(family),), certs, notes=notes)
+
+
+@dataclass(frozen=True)
+class MLenient(M):
+    """M with `rigor="lenient"`, addressable as "habench.methods.m:MLenient" for the cal sweep (SPEC 13.5)."""
+
+    rigor: str = "lenient"
+    name: str = "m_lenient"

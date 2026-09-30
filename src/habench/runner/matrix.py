@@ -21,7 +21,9 @@ METHODS = {
     "b3": "habench.methods.b3:B3",
     "bugdoc": "habench.methods.bugdoc_adapter:BugDocMethod",
     "m": "habench.methods.m:M",
+    "m_lenient": "habench.methods.m:MLenient",  # the rigor sweep, cal only (SPEC 13.5)
 }
+DEFAULT_METHODS = ("b0", "b1", "b3", "bugdoc", "m")
 INFO_VIEWS = (
     "L1", "L2-R", "L2-M", "N1", "N2",
     "L2-R-A1", "L2-R-A2", "L2-R-A3", "L2-R-A4", "L2-R-A5",
@@ -57,7 +59,7 @@ def _equivalent(view: str, capability: str, has_prep: bool) -> tuple[str, str] |
 
 
 def cells(
-    family: str, *, has_prep: bool = False, methods: Iterable[str] = METHODS, info_cross: bool | None = None
+    family: str, *, has_prep: bool = False, methods: Iterable[str] = DEFAULT_METHODS, info_cross: bool | None = None
 ) -> list[Cell]:
     """Cells for one contrast of scenario `family` (N, F, M, O, X or I).
 

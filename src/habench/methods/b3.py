@@ -61,7 +61,7 @@ class B3:
         if not (same_presence(r0.presence, env.final("x0")) and same_presence(r1.presence, env.final("x1"))):
             return all_open(OutputState.INFORMACAO_INSUFICIENTE, REPLAY_INVALIDO)
 
-        order = sorted(frozenset({f}) for f in D) + sorted((D - {f} for f in D), key=lambda s: sorted(D - s))
+        order = [frozenset({f}) for f in sorted(D)] + [D - {f} for f in sorted(D)]
         seen: dict[frozenset[str], EvalResult] = {frozenset(): r0, D: r1}
         unknown: set[frozenset[str]] = set()
         exhausted = False

@@ -2,7 +2,7 @@ import json
 
 from habench.env.table import TableEnv
 from habench.methods.base import ArtifactRef, EvalResult, PresenceMap, Query
-from habench.methods.m import M, hypotheses, inventory
+from habench.methods.m import M, MLenient, hypotheses, inventory
 from habench.types import SYSTEM_ICD10_WHO, AssocKey, OutputState, Presence
 
 A = AssocKey(1, SYSTEM_ICD10_WHO, "hier:toy", "C61")
@@ -140,6 +140,18 @@ def test_replay_invalid():
     env2 = TableEnv(D, replay_of(lambda s: False), finals={"x0": PresenceMap(), "x1": PresenceMap([A])})
     assert M().explain(env, [Query("a", A)])["a"].state == OutputState.AUSENCIA_DE_MUDANCA
     assert M().explain(env2, [Query("a", A)])["a"].reason == "replay_invalido"
+
+
+def test_hidden_evidence_change_never_explained():
+    """L1 shows no patch handle; the hashes reveal that the responses differ, so even lenient M abstains."""
+    D = ("ent_thr",)
+    cfg = {"x0": {"ent_thr": "0.6"}, "x1": {"ent_thr": "0.55"}}
+    hashes = {ArtifactRef("h0", "hashes", "x0"): json.dumps({"acm_response": "aa"}).encode(),
+              ArtifactRef("h1", "hashes", "x1"): json.dumps({"acm_response": "bb"}).encode()}
+    env = TableEnv(D, replay_of(lambda s: "ent_thr" in s), capability_="R-C", configs=cfg, blobs=hashes)
+    for m in (M(), MLenient()):
+        out = m.explain(env, [Query("a", A)])["a"]
+        assert out.state == INS and out.reason == "evidencia_oculta"
 
 
 def test_inadmissible_gives_contrafactual():

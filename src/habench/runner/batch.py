@@ -20,16 +20,15 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from habench.env.broker import BrokerEnv, expressible
+from habench.env.broker import BrokerEnv
 from habench.env.rpc import RunOutcome, run_isolated
 from habench.methods.base import Explanation, Query
-from habench.oracle import dummies
 from habench.oracle.contrast import Contrast
 from habench.oracle.hybrids import Hybrids
 from habench.oracle.truth import CellSpec, build_truth, write_truth
 from habench.pipeline.evidence import Evidence
 from habench.pipeline.mapping import Hierarchy
-from habench.runner.matrix import METHODS, Cell, cells
+from habench.runner.matrix import DEFAULT_METHODS, METHODS, Cell, cells
 from habench.types import SealedError
 from habench.views.build import Texts, build_view
 from habench.views.layout import DATA_DIR, check_partition, hid, load_key, views_root
@@ -45,7 +44,7 @@ class Batch:
     hier: Hierarchy
     texts: Mapping[int, Texts]
     data_dir: Path = DATA_DIR
-    methods: Sequence[str] = tuple(METHODS)
+    methods: Sequence[str] = DEFAULT_METHODS  # add "m_lenient" on cal for the rigor sweep
     info_fraction: float = 0.2  # seeded share of F/M/O/X contrasts crossed with every view (family I)
     seed: int = 0
     timeout: float = 600.0
@@ -74,12 +73,10 @@ class Batch:
         hyb = Hybrids(c, self.evidence, self.hier)
         declared = Hybrids(c, self.evidence, self.hier, levels="declared")
         specs = sorted({(x.view, x.capability) for x in run_cells if x.runs})
+        # dummy and expressibility use β's defaults, which the broker shares (one core path for truth and replay)
         t = build_truth(
             hyb, scenario.queries, partition=self.partition, scenario_family=scenario.family,
-            cells=[CellSpec.of(v, cap) for v, cap in specs],
-            dummy=lambda key, f: dummies.certificate(hyb, key, f),
-            declared_hybrids=declared,
-            expressible=lambda cs, S: expressible(cs.view, c, S),
+            cells=[CellSpec.of(v, cap) for v, cap in specs], declared_hybrids=declared,
         )
         write_truth(t, path)
         meta = {"cid": c.cid, "family": scenario.family, "subfamily": scenario.subfamily,
