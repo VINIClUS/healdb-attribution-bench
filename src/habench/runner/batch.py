@@ -69,6 +69,9 @@ class Batch:
         c: Contrast = scenario.contrast
         path = self.truth_dir / "contrasts" / f"{c.cid}.json"
         if path.exists():
+            stored = json.loads(path.read_text(encoding="utf-8"))["contrast_hash"]
+            if stored != c.content_hash():
+                raise RuntimeError(f"stale truth for {c.cid}: the contrast changed since it was written ({path})")
             return path
         hyb = Hybrids(c, self.evidence, self.hier)
         declared = Hybrids(c, self.evidence, self.hier, levels="declared")
