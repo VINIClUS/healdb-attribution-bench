@@ -1,4 +1,27 @@
 {
+  "call_metadata": {
+    "run_2024": {
+      "distinct_request_ids": 7447,
+      "responses": 7447,
+      "with_http_date": 7447,
+      "with_model_version": 7447,
+      "with_request_id": 7447
+    },
+    "v1": {
+      "distinct_request_ids": 7447,
+      "responses": 7447,
+      "with_http_date": 7447,
+      "with_model_version": 7447,
+      "with_request_id": 7447
+    },
+    "v2": {
+      "distinct_request_ids": 7447,
+      "responses": 7447,
+      "with_http_date": 7447,
+      "with_model_version": 7447,
+      "with_request_id": 7447
+    }
+  },
   "compared": "text[BeginOffset:EndOffset] == Text in code points, entities and attributes; only responses with entities are counted; coverage = union of span intervals / text length",
   "run_2024": {
     "model_versions": {
@@ -36,6 +59,11 @@
       "spans": 106589,
       "spans_ok": 106528
     }
+  },
+  "shared_request_ids": {
+    "v1_2024": 0,
+    "v1_v2": 0,
+    "v2_2024": 0
   },
   "translation_0327_vs_v1": {
     "different": 2,

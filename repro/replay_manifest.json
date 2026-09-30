@@ -1,0 +1,7236 @@
+{
+  "blobs": [
+    {
+      "id": "02d294c693d3b239dae349d78911e15649776571",
+      "kind": "blob_ok",
+      "path": "process_disease_data_json.py"
+    },
+    {
+      "id": "c9c4aeb9bfbf3aedfe46ee3434f98b2b5afd60e3",
+      "kind": "blob_ok",
+      "path": "link_medications_with_diseases.py"
+    },
+    {
+      "id": "405a10c0e422f312cae0e4508e4fae1c7862b6dd",
+      "kind": "commit",
+      "path": "src/nlp_extraction"
+    }
+  ],
+  "commands": [
+    "2026-09-30 14:54:15\tdocker network create healdb-replay-net",
+    "2026-09-30 14:54:15\tdocker run -d --name healdb-replay-mysql --network healdb-replay-net -e MYSQL_ROOT_PASSWORD -v healdb-replay-mysql-data:/var/lib/mysql -v /home/vinicius/healdb-reconstrucao/x:/x:ro mysql:8.0.33 --skip-log-bin --innodb-buffer-pool-size=1G --innodb-flush-log-at-trx-commit=0 --innodb-doublewrite=0 --max-allowed-packet=1G --innodb-log-file-size=512M",
+    "2026-09-30 14:54:23\tdocker exec -e MYSQL_PWD healdb-replay-mysql mysql -uroot -e CREATE DATABASE IF NOT EXISTS healdb",
+    "2026-09-30 14:54:23\t# mysql healdb < /home/vinicius/healdb-reconstrucao/x/v1_dump_0711/Dump20250711_Dump_and_Structure/healdb_hd_icd_group.sql",
+    "2026-09-30 14:54:23\t# mysql healdb < /home/vinicius/healdb-reconstrucao/x/v1_dump_0711/Dump20250711_Dump_and_Structure/healdb_hd_icd_category.sql",
+    "2026-09-30 14:54:24\t# mysql healdb < /home/vinicius/healdb-reconstrucao/x/v1_dump_0711/Dump20250711_Dump_and_Structure/healdb_hd_icd_subcategory.sql",
+    "2026-09-30 14:54:24\t# mysql healdb < /home/vinicius/healdb-reconstrucao/x/v1_dump_0711/Dump20250711_Dump_and_Structure/healdb_hd_medication.sql",
+    "2026-09-30 14:54:24\t# mysql healdb < /home/vinicius/healdb-reconstrucao/x/v1_dump_0711/Dump20250711_Dump_and_Structure/healdb_hd_int_med_disease_api_response.sql",
+    "2026-09-30 14:54:31\t# python ddl_only.py healdb_hd_int_med_disease_entity.sql | mysql healdb",
+    "2026-09-30 14:54:32\t# python ddl_only.py healdb_hd_int_med_disease_trait.sql | mysql healdb",
+    "2026-09-30 14:54:32\t# python ddl_only.py healdb_hd_medication_disease.sql | mysql healdb",
+    "2026-09-30 14:54:33\t# git -C /home/vinicius/code/HealDB cat-file blob 02d294c693d3b239dae349d78911e15649776571 > /home/vinicius/hab-data/replay/code/405a10c/process_disease_data_json.py",
+    "2026-09-30 14:54:33\t# git -C /home/vinicius/code/HealDB cat-file blob c9c4aeb9bfbf3aedfe46ee3434f98b2b5afd60e3 > /home/vinicius/hab-data/replay/code/405a10c/link_medications_with_diseases.py",
+    "2026-09-30 14:54:33\tdocker rm -f healdb-replay-py",
+    "2026-09-30 14:54:33\tdocker run -d --name healdb-replay-py --network healdb-replay-net --memory=3g -e PYTHONUNBUFFERED=1 -e PYTHONDONTWRITEBYTECODE=1 -e MYSQL_PWD -v /home/vinicius/hab-data/replay/code:/code:ro -v /home/vinicius/code/hab-wt/alpha/scripts/replay:/scripts:ro -v /home/vinicius/hab-data/replay/export:/export -v /home/vinicius/hab-data/replay/xval:/xval python:3.12-slim sleep infinity",
+    "2026-09-30 14:54:33\tdocker exec healdb-replay-py pip install -q --no-cache-dir --root-user-action=ignore --disable-pip-version-check mysql-connector-python==26.7.0",
+    "2026-09-30 14:54:37\tdocker exec -u 1000:1000 -e MYSQL_PWD healdb-replay-py python /scripts/driver.py replay",
+    "2026-09-30 15:04:56\t# uv run python -m habench.historical.xval prepare",
+    "2026-09-30 15:04:57\t# create schema healdb_xval with ICD tables and dev-only entity/trait rows",
+    "2026-09-30 15:04:57\t# mysql < /home/vinicius/hab-data/replay/xval/dev_meds.sql",
+    "2026-09-30 15:04:58\tdocker rm -f healdb-replay-py",
+    "2026-09-30 15:04:58\tdocker run -d --name healdb-replay-py --network healdb-replay-net --memory=3g -e PYTHONUNBUFFERED=1 -e PYTHONDONTWRITEBYTECODE=1 -e MYSQL_PWD -v /home/vinicius/hab-data/replay/code:/code:ro -v /home/vinicius/code/hab-wt/alpha/scripts/replay:/scripts:ro -v /home/vinicius/hab-data/replay/export:/export -v /home/vinicius/hab-data/replay/xval:/xval python:3.12-slim sleep infinity",
+    "2026-09-30 15:04:58\tdocker exec healdb-replay-py pip install -q --no-cache-dir --root-user-action=ignore --disable-pip-version-check mysql-connector-python==26.7.0",
+    "2026-09-30 15:05:02\tdocker exec -u 1000:1000 -e MYSQL_PWD healdb-replay-py python /scripts/driver.py xval"
+  ],
+  "compare": {
+    "equal": true,
+    "tables": {
+      "entity": {
+        "n_only_replay": 0,
+        "n_only_snapshot": 0,
+        "n_replay": 274010,
+        "n_snapshot": 274010,
+        "n_unexplained": 0,
+        "only_replay": [],
+        "only_snapshot": [],
+        "order_equal": true,
+        "unexplained": []
+      },
+      "md": {
+        "n_only_replay": 0,
+        "n_only_snapshot": 0,
+        "n_replay": 43194,
+        "n_snapshot": 43194,
+        "n_unexplained": 0,
+        "only_replay": [],
+        "only_snapshot": [],
+        "order_equal": true,
+        "unexplained": []
+      },
+      "trait": {
+        "n_only_replay": 0,
+        "n_only_snapshot": 0,
+        "n_replay": 469957,
+        "n_snapshot": 469957,
+        "n_unexplained": 0,
+        "only_replay": [],
+        "only_snapshot": [],
+        "order_equal": true,
+        "unexplained": []
+      }
+    },
+    "whitelist_unused": [],
+    "whitelisted": [
+      {
+        "column": "vl_score",
+        "key": [
+          560,
+          "C49.9"
+        ],
+        "note": "1 ULP after the MySQL reload of the JSON response (F1)",
+        "replay": 2.0729831362586998e-07,
+        "replay_repr": "2.0729831362586998e-07",
+        "snapshot": 2.0729831362586995e-07,
+        "snapshot_repr": "2.0729831362586995e-07",
+        "table": "entity"
+      }
+    ]
+  },
+  "export": {
+    "finished": "2026-09-30 18:04:56",
+    "mysql_version": "8.0.33",
+    "row_counts": {
+      "entity": 274010,
+      "md": 43194,
+      "trait": 469957
+    },
+    "started": "2026-09-30 17:54:37"
+  },
+  "failed_runs": [
+    {
+      "cause": "up.sh loaded a table subset without hd_medication; every entity insert failed on FK_MEDICATION_ACM2 and the historical code only prints the error and continues",
+      "classification": "environment finding (subset load broke FK integrity), not a pipeline difference",
+      "driver_log": "/home/vinicius/hab-data/replay/logs/replay_405a10c.run1_fk_failure.log",
+      "fix": "up.sh loads hd_medication; driver.py exits non-zero when process_disease_data_json writes no entity rows",
+      "fix_commit": "1c505b0",
+      "outcome": "driver rc=0 but 0 rows exported (entity, trait, md); xval ran on empty tables (0 rows per config)",
+      "replay": {
+        "fk_errors_by_constraint": {
+          "FK_MEDICATION_ACM2": 744590
+        },
+        "historical_error_lines": 744590,
+        "operator_actions": [
+          "TRUNCATE hd_medication_disease (not in the historical code; V1 md ids start at 1)"
+        ],
+        "row_counts_after_stage": {
+          "link_medications_with_diseases": {
+            "hd_int_med_disease_entity": 0,
+            "hd_int_med_disease_trait": 0,
+            "hd_medication_disease": 0
+          },
+          "process_disease_data_json": {
+            "hd_int_med_disease_entity": 0,
+            "hd_int_med_disease_trait": 0,
+            "hd_medication_disease": 0
+          }
+        },
+        "timings_s": {
+          "link_medications_with_diseases": 0.0,
+          "process_disease_data_json": 431.2
+        },
+        "total_s": 431.2,
+        "versions": "python 3.12.14, mysql-connector-python 26.7.0, server 8.0.33"
+      },
+      "run": 1,
+      "wrapper_log": "/home/vinicius/hab-data/orchestration/docker_alpha.run1.log"
+    }
+  ],
+  "images": [
+    "mysql:8.0.33 sha256:ea68e51ffe9b96fef6076f1218af11301aeaf13c6201e0ec9aaef5791d5ddc5d [\"mysql@sha256:ea68e51ffe9b96fef6076f1218af11301aeaf13c6201e0ec9aaef5791d5ddc5d\"]",
+    "python:3.12-slim sha256:2f17fc044b579bab302c2e8054d3a686e2cb9a83de48e70534b94cd8ebbe06a9 [\"python@sha256:2f17fc044b579bab302c2e8054d3a686e2cb9a83de48e70534b94cd8ebbe06a9\"]"
+  ],
+  "loads": [
+    {
+      "schema": "healdb",
+      "seconds": 0,
+      "status": "OK",
+      "table": "hd_icd_group"
+    },
+    {
+      "schema": "healdb",
+      "seconds": 1,
+      "status": "OK",
+      "table": "hd_icd_category"
+    },
+    {
+      "schema": "healdb",
+      "seconds": 0,
+      "status": "OK",
+      "table": "hd_icd_subcategory"
+    },
+    {
+      "schema": "healdb",
+      "seconds": 0,
+      "status": "OK",
+      "table": "hd_medication"
+    },
+    {
+      "schema": "healdb",
+      "seconds": 7,
+      "status": "OK",
+      "table": "hd_int_med_disease_api_response"
+    },
+    {
+      "schema": "healdb",
+      "seconds": 1,
+      "status": "OK",
+      "table": "hd_int_med_disease_entity"
+    },
+    {
+      "schema": "healdb",
+      "seconds": 0,
+      "status": "OK",
+      "table": "hd_int_med_disease_trait"
+    },
+    {
+      "schema": "healdb",
+      "seconds": 1,
+      "status": "OK",
+      "table": "hd_medication_disease"
+    }
+  ],
+  "log_dir": "/home/vinicius/hab-data/replay/logs",
+  "pip_freeze": [
+    "mysql-connector-python==26.7.0"
+  ],
+  "replay": {
+    "fk_errors_by_constraint": {},
+    "historical_error_lines": 0,
+    "operator_actions": [
+      "TRUNCATE hd_medication_disease (not in the historical code; V1 md ids start at 1)"
+    ],
+    "row_counts_after_stage": {
+      "link_medications_with_diseases": {
+        "hd_int_med_disease_entity": 274010,
+        "hd_int_med_disease_trait": 469957,
+        "hd_medication_disease": 43194
+      },
+      "process_disease_data_json": {
+        "hd_int_med_disease_entity": 274010,
+        "hd_int_med_disease_trait": 469957,
+        "hd_medication_disease": 0
+      }
+    },
+    "timings_s": {
+      "link_medications_with_diseases": 111.6,
+      "process_disease_data_json": 500.5
+    },
+    "total_s": 618.4,
+    "versions": "python 3.12.14, mysql-connector-python 26.7.0, server 8.0.33"
+  },
+  "setup_operator_actions": [
+    "load healdb.hd_medication from the V1 dump (FK parent of hd_int_med_disease_entity via FK_MEDICATION_ACM2 and of hd_medication_disease); missing in the first run; added to scripts/replay/up.sh in 1c505b0"
+  ],
+  "xval": [
+    {
+      "agrees": true,
+      "cfg_id": "3b4d791b96",
+      "config": {
+        "ent_thr": 0.6,
+        "icd_thr": 0.6,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1"
+      },
+      "differ_sample": [
+        [
+          [
+            143
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            153
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            154
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            155
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            186
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 110523,
+      "n_expected": 13607,
+      "n_historical": 13607,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 505,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "ea1b716b34",
+      "config": {
+        "ent_thr": 0.6,
+        "icd_thr": 0.6,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1"
+      },
+      "differ_sample": [
+        [
+          [
+            129
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "SIGN"
+        ],
+        [
+          [
+            156
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            166
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            167
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            168
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 113166,
+      "n_expected": 13962,
+      "n_historical": 13962,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 518,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "015765327d",
+      "config": {
+        "ent_thr": 0.6,
+        "icd_thr": 0.3,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_hyp_le_0.6"
+      },
+      "differ_sample": [
+        [
+          [
+            1
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            2
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            106
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            107
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            115
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 198587,
+      "n_expected": 24515,
+      "n_historical": 24515,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 777,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "06bfb6836e",
+      "config": {
+        "ent_thr": 0.55,
+        "icd_thr": 0.3,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1"
+      },
+      "differ_sample": [
+        [
+          [
+            6
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            7
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            117
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            118
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            126
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 238806,
+      "n_expected": 29344,
+      "n_historical": 29344,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 1831,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "07d3f7ada3",
+      "config": {
+        "ent_thr": 0.65,
+        "icd_thr": 0.6,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_no_required"
+      },
+      "differ_sample": [
+        [
+          [
+            129
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "SIGN"
+        ],
+        [
+          [
+            156
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            166
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            167
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            168
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 113166,
+      "n_expected": 13962,
+      "n_historical": 13962,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 518,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "09f5321a92",
+      "config": {
+        "ent_thr": 0.55,
+        "icd_thr": 0.6,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1"
+      },
+      "differ_sample": [
+        [
+          [
+            75
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            110
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            146
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            156
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            158
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 120460,
+      "n_expected": 14699,
+      "n_historical": 14699,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 753,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "0dce25355f",
+      "config": {
+        "ent_thr": 0.6,
+        "icd_thr": 0.6,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_no_required"
+      },
+      "differ_sample": [
+        [
+          [
+            143
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            153
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            154
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            155
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            186
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 110523,
+      "n_expected": 13607,
+      "n_historical": 13607,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 505,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "0e1b0d1fab",
+      "config": {
+        "ent_thr": 0.7,
+        "icd_thr": 0.65,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "neg_only"
+      },
+      "differ_sample": [
+        [
+          [
+            54
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            57
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            58
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            59
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            60
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 136965,
+      "n_expected": 16959,
+      "n_historical": 16959,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 1223,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "0ebc9763d7",
+      "config": {
+        "ent_thr": 0.55,
+        "icd_thr": 0.65,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_hyp_le_0.6"
+      },
+      "differ_sample": [
+        [
+          [
+            97
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            107
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "SIGN"
+        ],
+        [
+          [
+            138
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            139
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            140
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 95050,
+      "n_expected": 11780,
+      "n_historical": 11780,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 451,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "117ec01eb1",
+      "config": {
+        "ent_thr": 0.55,
+        "icd_thr": 0.55,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_hyp_le_0.6"
+      },
+      "differ_sample": [
+        [
+          [
+            80
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            122
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            135
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            182
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            185
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 129785,
+      "n_expected": 15870,
+      "n_historical": 15870,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 685,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "16310e6e49",
+      "config": {
+        "ent_thr": 0.6,
+        "icd_thr": 0.55,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_hyp_le_0.6"
+      },
+      "differ_sample": [
+        [
+          [
+            179
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            180
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            181
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            210
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            211
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 119492,
+      "n_expected": 14709,
+      "n_historical": 14709,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 422,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "1715ba0e58",
+      "config": {
+        "ent_thr": 0.65,
+        "icd_thr": 0.6,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1"
+      },
+      "differ_sample": [
+        [
+          [
+            143
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            153
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            154
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            155
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            186
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 110523,
+      "n_expected": 13607,
+      "n_historical": 13607,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 505,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "18316c47ad",
+      "config": {
+        "ent_thr": 0.6,
+        "icd_thr": 0.55,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "neg_only"
+      },
+      "differ_sample": [
+        [
+          [
+            68
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            73
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            74
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            75
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            76
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 205600,
+      "n_expected": 24851,
+      "n_historical": 24851,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 1988,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "22ef94e3bc",
+      "config": {
+        "ent_thr": 0.65,
+        "icd_thr": 0.55,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "neg_only"
+      },
+      "differ_sample": [
+        [
+          [
+            73
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            78
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            79
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            80
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            81
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 209133,
+      "n_expected": 25368,
+      "n_historical": 25368,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 2028,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "23bfaf9f81",
+      "config": {
+        "ent_thr": 0.6,
+        "icd_thr": 0.3,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "neg_only"
+      },
+      "differ_sample": [
+        [
+          [
+            6
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            7
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            63
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SYMPTOM"
+        ],
+        [
+          [
+            67
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SYMPTOM"
+        ],
+        [
+          [
+            139
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 353978,
+      "n_expected": 43129,
+      "n_historical": 43129,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 3387,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "2ab4ccb88d",
+      "config": {
+        "ent_thr": 0.65,
+        "icd_thr": 0.65,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_no_required"
+      },
+      "differ_sample": [
+        [
+          [
+            105
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "SIGN"
+        ],
+        [
+          [
+            135
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            136
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            137
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            161
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 94526,
+      "n_expected": 11774,
+      "n_historical": 11774,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 403,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "2c18eda74e",
+      "config": {
+        "ent_thr": 0.7,
+        "icd_thr": 0.3,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "neg_only"
+      },
+      "differ_sample": [
+        [
+          [
+            6
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            7
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            60
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SYMPTOM"
+        ],
+        [
+          [
+            64
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SYMPTOM"
+        ],
+        [
+          [
+            125
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 320289,
+      "n_expected": 38900,
+      "n_historical": 38900,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 2797,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "2d2dcabf9a",
+      "config": {
+        "ent_thr": 0.7,
+        "icd_thr": 0.65,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_no_required"
+      },
+      "differ_sample": [
+        [
+          [
+            143
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            144
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            198
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            243
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            293
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 85237,
+      "n_expected": 10745,
+      "n_historical": 10745,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 271,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "311ebb6620",
+      "config": {
+        "ent_thr": 0.55,
+        "icd_thr": 0.3,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_hyp_le_0.6"
+      },
+      "differ_sample": [
+        [
+          [
+            1
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            2
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            123
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            124
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            132
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 225367,
+      "n_expected": 27810,
+      "n_historical": 27810,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 1441,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "333277b0e7",
+      "config": {
+        "ent_thr": 0.55,
+        "icd_thr": 0.65,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "neg_only"
+      },
+      "differ_sample": [
+        [
+          [
+            56
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            59
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            60
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            61
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            62
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 156733,
+      "n_expected": 19098,
+      "n_historical": 19098,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 1606,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "35512ec1c7",
+      "config": {
+        "ent_thr": 0.65,
+        "icd_thr": 0.55,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_no_required"
+      },
+      "differ_sample": [
+        [
+          [
+            170
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            183
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            184
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            185
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            218
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 128947,
+      "n_expected": 15846,
+      "n_historical": 15846,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 617,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "38e6ef35e3",
+      "config": {
+        "ent_thr": 0.65,
+        "icd_thr": 0.55,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_hyp_le_0.6"
+      },
+      "differ_sample": [
+        [
+          [
+            179
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            180
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            181
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            210
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            211
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 119492,
+      "n_expected": 14709,
+      "n_historical": 14709,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 422,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "3bb535302b",
+      "config": {
+        "ent_thr": 0.65,
+        "icd_thr": 0.65,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1"
+      },
+      "differ_sample": [
+        [
+          [
+            105
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "SIGN"
+        ],
+        [
+          [
+            135
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            136
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            137
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            161
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 94526,
+      "n_expected": 11774,
+      "n_historical": 11774,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 403,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "3c0d88f004",
+      "config": {
+        "ent_thr": 0.55,
+        "icd_thr": 0.6,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1"
+      },
+      "differ_sample": [
+        [
+          [
+            89
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            124
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            136
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "SIGN"
+        ],
+        [
+          [
+            163
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            173
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 123109,
+      "n_expected": 15088,
+      "n_historical": 15088,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 780,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "416890d0d4",
+      "config": {
+        "ent_thr": 0.65,
+        "icd_thr": 0.65,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1"
+      },
+      "differ_sample": [
+        [
+          [
+            123
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            124
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            125
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            148
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            152
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 92303,
+      "n_expected": 11478,
+      "n_historical": 11478,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 395,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "41756950e6",
+      "config": {
+        "ent_thr": 0.65,
+        "icd_thr": 0.55,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1"
+      },
+      "differ_sample": [
+        [
+          [
+            147
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "SIGN"
+        ],
+        [
+          [
+            183
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            196
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            197
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            198
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 132256,
+      "n_expected": 16244,
+      "n_historical": 16244,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 630,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "49c5361d9b",
+      "config": {
+        "ent_thr": 0.65,
+        "icd_thr": 0.65,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "neg_only"
+      },
+      "differ_sample": [
+        [
+          [
+            56
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            59
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            60
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            61
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            62
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 148027,
+      "n_expected": 18152,
+      "n_historical": 18152,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 1407,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "51e504c7ae",
+      "config": {
+        "ent_thr": 0.7,
+        "icd_thr": 0.6,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_no_required"
+      },
+      "differ_sample": [
+        [
+          [
+            127
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            165
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            166
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            167
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            168
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 100025,
+      "n_expected": 12401,
+      "n_historical": 12401,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 343,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "536933f41c",
+      "config": {
+        "ent_thr": 0.65,
+        "icd_thr": 0.6,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_hyp_le_0.6"
+      },
+      "differ_sample": [
+        [
+          [
+            125
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "SIGN"
+        ],
+        [
+          [
+            161
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            162
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            163
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            191
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 104693,
+      "n_expected": 12986,
+      "n_historical": 12986,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 360,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "539d6023be",
+      "config": {
+        "ent_thr": 0.7,
+        "icd_thr": 0.3,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_no_required"
+      },
+      "differ_sample": [
+        [
+          [
+            6
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            7
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            111
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            112
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            120
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 196970,
+      "n_expected": 24237,
+      "n_historical": 24237,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 805,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "58a2f63a9c",
+      "config": {
+        "ent_thr": 0.65,
+        "icd_thr": 0.3,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "neg_only"
+      },
+      "differ_sample": [
+        [
+          [
+            6
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            7
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            63
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SYMPTOM"
+        ],
+        [
+          [
+            67
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SYMPTOM"
+        ],
+        [
+          [
+            139
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 353978,
+      "n_expected": 43129,
+      "n_historical": 43129,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 3387,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "60dd783a19",
+      "config": {
+        "ent_thr": 0.55,
+        "icd_thr": 0.65,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1"
+      },
+      "differ_sample": [
+        [
+          [
+            87
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            125
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            126
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            127
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            150
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 100779,
+      "n_expected": 12384,
+      "n_historical": 12384,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 589,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "614b510b49",
+      "config": {
+        "ent_thr": 0.7,
+        "icd_thr": 0.65,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1"
+      },
+      "differ_sample": [
+        [
+          [
+            143
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            144
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            198
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            243
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            293
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 85237,
+      "n_expected": 10745,
+      "n_historical": 10745,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 271,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "62498babd1",
+      "config": {
+        "ent_thr": 0.6,
+        "icd_thr": 0.6,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "neg_only"
+      },
+      "differ_sample": [
+        [
+          [
+            67
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            71
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            72
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            73
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            74
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 180229,
+      "n_expected": 21932,
+      "n_historical": 21932,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 1747,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "64eca09d1e",
+      "config": {
+        "ent_thr": 0.7,
+        "icd_thr": 0.3,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_hyp_le_0.6"
+      },
+      "differ_sample": [
+        [
+          [
+            1
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            2
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            101
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            102
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            110
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 182371,
+      "n_expected": 22476,
+      "n_historical": 22476,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 623,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "6923e9c8b5",
+      "config": {
+        "ent_thr": 0.65,
+        "icd_thr": 0.3,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_no_required"
+      },
+      "differ_sample": [
+        [
+          [
+            6
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            7
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            130
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            131
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            139
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 224114,
+      "n_expected": 27710,
+      "n_historical": 27710,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 1188,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "6b15ad7748",
+      "config": {
+        "ent_thr": 0.65,
+        "icd_thr": 0.3,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1"
+      },
+      "differ_sample": [
+        [
+          [
+            6
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            7
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            116
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            117
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            125
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 217395,
+      "n_expected": 26787,
+      "n_historical": 26787,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 1152,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "6f25f73128",
+      "config": {
+        "ent_thr": 0.65,
+        "icd_thr": 0.55,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "neg_only"
+      },
+      "differ_sample": [
+        [
+          [
+            68
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            73
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            74
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            75
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            76
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 205600,
+      "n_expected": 24851,
+      "n_historical": 24851,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 1988,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "7199b811df",
+      "config": {
+        "ent_thr": 0.55,
+        "icd_thr": 0.65,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_no_required"
+      },
+      "differ_sample": [
+        [
+          [
+            87
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            125
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            126
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            127
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            150
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 100779,
+      "n_expected": 12384,
+      "n_historical": 12384,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 589,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "73fdbac345",
+      "config": {
+        "ent_thr": 0.7,
+        "icd_thr": 0.55,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "neg_only"
+      },
+      "differ_sample": [
+        [
+          [
+            64
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            69
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            70
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            71
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            72
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 191082,
+      "n_expected": 23165,
+      "n_historical": 23165,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 1714,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "75f8c732b6",
+      "config": {
+        "ent_thr": 0.65,
+        "icd_thr": 0.65,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_hyp_le_0.6"
+      },
+      "differ_sample": [
+        [
+          [
+            103
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "SIGN"
+        ],
+        [
+          [
+            133
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            134
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            135
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            158
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 87448,
+      "n_expected": 10951,
+      "n_historical": 10951,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 279,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "76a4751e00",
+      "config": {
+        "ent_thr": 0.6,
+        "icd_thr": 0.55,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1"
+      },
+      "differ_sample": [
+        [
+          [
+            147
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "SIGN"
+        ],
+        [
+          [
+            183
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            196
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            197
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            198
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 132256,
+      "n_expected": 16244,
+      "n_historical": 16244,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 630,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "79523a8cb3",
+      "config": {
+        "ent_thr": 0.55,
+        "icd_thr": 0.65,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "neg_only"
+      },
+      "differ_sample": [
+        [
+          [
+            62
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            65
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            66
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            67
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            68
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 159570,
+      "n_expected": 19492,
+      "n_historical": 19492,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 1645,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "7eda3bfba0",
+      "config": {
+        "ent_thr": 0.65,
+        "icd_thr": 0.3,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1"
+      },
+      "differ_sample": [
+        [
+          [
+            6
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            7
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            130
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            131
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            139
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 224114,
+      "n_expected": 27710,
+      "n_historical": 27710,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 1188,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "8088188189",
+      "config": {
+        "ent_thr": 0.6,
+        "icd_thr": 0.3,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1"
+      },
+      "differ_sample": [
+        [
+          [
+            6
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            7
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            130
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            131
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            139
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 224114,
+      "n_expected": 27710,
+      "n_historical": 27710,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 1188,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "8395aa4e45",
+      "config": {
+        "ent_thr": 0.6,
+        "icd_thr": 0.6,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_hyp_le_0.6"
+      },
+      "differ_sample": [
+        [
+          [
+            149
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            150
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            151
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            178
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            179
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 102270,
+      "n_expected": 12658,
+      "n_historical": 12658,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 348,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "846e32b5e9",
+      "config": {
+        "ent_thr": 0.65,
+        "icd_thr": 0.65,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "neg_only"
+      },
+      "differ_sample": [
+        [
+          [
+            59
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            62
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            63
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            64
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            65
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 150640,
+      "n_expected": 18517,
+      "n_historical": 18517,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 1434,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "84c9dff4f2",
+      "config": {
+        "ent_thr": 0.6,
+        "icd_thr": 0.65,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1"
+      },
+      "differ_sample": [
+        [
+          [
+            123
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            124
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            125
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            148
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            152
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 92303,
+      "n_expected": 11478,
+      "n_historical": 11478,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 395,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "8970b67c09",
+      "config": {
+        "ent_thr": 0.55,
+        "icd_thr": 0.3,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_hyp_le_0.6"
+      },
+      "differ_sample": [
+        [
+          [
+            1
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            2
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            107
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            108
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            116
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 218352,
+      "n_expected": 26910,
+      "n_historical": 26910,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 1392,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "8d363e05cc",
+      "config": {
+        "ent_thr": 0.6,
+        "icd_thr": 0.3,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_hyp_le_0.6"
+      },
+      "differ_sample": [
+        [
+          [
+            1
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            2
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            118
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            119
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            127
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 204702,
+      "n_expected": 25356,
+      "n_historical": 25356,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 806,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "8d671624e9",
+      "config": {
+        "ent_thr": 0.6,
+        "icd_thr": 0.65,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_hyp_le_0.6"
+      },
+      "differ_sample": [
+        [
+          [
+            121
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            122
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            123
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            145
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            149
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 85497,
+      "n_expected": 10677,
+      "n_historical": 10677,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 271,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "9359a85a0f",
+      "config": {
+        "ent_thr": 0.55,
+        "icd_thr": 0.55,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_no_required"
+      },
+      "differ_sample": [
+        [
+          [
+            83
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            125
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            138
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            174
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            186
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 140492,
+      "n_expected": 17127,
+      "n_historical": 17127,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 920,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "937318cc5e",
+      "config": {
+        "ent_thr": 0.65,
+        "icd_thr": 0.6,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1"
+      },
+      "differ_sample": [
+        [
+          [
+            129
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "SIGN"
+        ],
+        [
+          [
+            156
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            166
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            167
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            168
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 113166,
+      "n_expected": 13962,
+      "n_historical": 13962,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 518,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "9515c7a531",
+      "config": {
+        "ent_thr": 0.55,
+        "icd_thr": 0.3,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_no_required"
+      },
+      "differ_sample": [
+        [
+          [
+            6
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            7
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            135
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            136
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            144
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 246315,
+      "n_expected": 30332,
+      "n_historical": 30332,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 1893,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "961e7eb3b5",
+      "config": {
+        "ent_thr": 0.7,
+        "icd_thr": 0.65,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_hyp_le_0.6"
+      },
+      "differ_sample": [
+        [
+          [
+            128
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            129
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            181
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            223
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            257
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 78539,
+      "n_expected": 9897,
+      "n_historical": 9897,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 226,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "9b797c2775",
+      "config": {
+        "ent_thr": 0.55,
+        "icd_thr": 0.3,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "neg_only"
+      },
+      "differ_sample": [
+        [
+          [
+            6
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            7
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            60
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SYMPTOM"
+        ],
+        [
+          [
+            64
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SYMPTOM"
+        ],
+        [
+          [
+            131
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 366831,
+      "n_expected": 44558,
+      "n_historical": 44558,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 4002,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "a00fb98728",
+      "config": {
+        "ent_thr": 0.55,
+        "icd_thr": 0.6,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_no_required"
+      },
+      "differ_sample": [
+        [
+          [
+            75
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            110
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            146
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            156
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            158
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 120460,
+      "n_expected": 14699,
+      "n_historical": 14699,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 753,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "a0f2f4d172",
+      "config": {
+        "ent_thr": 0.55,
+        "icd_thr": 0.65,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1"
+      },
+      "differ_sample": [
+        [
+          [
+            99
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            109
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "SIGN"
+        ],
+        [
+          [
+            140
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            141
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            142
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 103217,
+      "n_expected": 12709,
+      "n_historical": 12709,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 609,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "a1bac32733",
+      "config": {
+        "ent_thr": 0.65,
+        "icd_thr": 0.6,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_hyp_le_0.6"
+      },
+      "differ_sample": [
+        [
+          [
+            149
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            150
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            151
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            178
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            179
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 102270,
+      "n_expected": 12658,
+      "n_historical": 12658,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 348,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "a440777afe",
+      "config": {
+        "ent_thr": 0.55,
+        "icd_thr": 0.6,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "neg_only"
+      },
+      "differ_sample": [
+        [
+          [
+            72
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            76
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            77
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            78
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            79
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 190944,
+      "n_expected": 23105,
+      "n_historical": 23105,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 2017,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "a804434b78",
+      "config": {
+        "ent_thr": 0.7,
+        "icd_thr": 0.65,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1"
+      },
+      "differ_sample": [
+        [
+          [
+            131
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            132
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            186
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            231
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            266
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 83390,
+      "n_expected": 10488,
+      "n_historical": 10488,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 266,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "ad3938d7e5",
+      "config": {
+        "ent_thr": 0.65,
+        "icd_thr": 0.3,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "neg_only"
+      },
+      "differ_sample": [
+        [
+          [
+            6
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            7
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            60
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SYMPTOM"
+        ],
+        [
+          [
+            64
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SYMPTOM"
+        ],
+        [
+          [
+            130
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 344373,
+      "n_expected": 41897,
+      "n_historical": 41897,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 3295,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "ad451134ad",
+      "config": {
+        "ent_thr": 0.65,
+        "icd_thr": 0.55,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1"
+      },
+      "differ_sample": [
+        [
+          [
+            170
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            183
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            184
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            185
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            218
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 128947,
+      "n_expected": 15846,
+      "n_historical": 15846,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 617,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "b3157ca6f2",
+      "config": {
+        "ent_thr": 0.7,
+        "icd_thr": 0.3,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1"
+      },
+      "differ_sample": [
+        [
+          [
+            6
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            7
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            125
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            126
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            134
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 202774,
+      "n_expected": 25027,
+      "n_historical": 25027,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 823,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "b46deb0af5",
+      "config": {
+        "ent_thr": 0.7,
+        "icd_thr": 0.6,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1"
+      },
+      "differ_sample": [
+        [
+          [
+            139
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            178
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            179
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            180
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            181
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 102326,
+      "n_expected": 12707,
+      "n_historical": 12707,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 351,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "b646b03eda",
+      "config": {
+        "ent_thr": 0.6,
+        "icd_thr": 0.65,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_no_required"
+      },
+      "differ_sample": [
+        [
+          [
+            123
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            124
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            125
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            148
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            152
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 92303,
+      "n_expected": 11478,
+      "n_historical": 11478,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 395,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "b836ddd217",
+      "config": {
+        "ent_thr": 0.55,
+        "icd_thr": 0.3,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_no_required"
+      },
+      "differ_sample": [
+        [
+          [
+            6
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            7
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            117
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            118
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            126
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 238806,
+      "n_expected": 29344,
+      "n_historical": 29344,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 1831,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "bb3fcf6ccb",
+      "config": {
+        "ent_thr": 0.55,
+        "icd_thr": 0.6,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "neg_only"
+      },
+      "differ_sample": [
+        [
+          [
+            64
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            68
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            69
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            70
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            71
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 187235,
+      "n_expected": 22615,
+      "n_historical": 22615,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 1965,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "bbb31d1112",
+      "config": {
+        "ent_thr": 0.65,
+        "icd_thr": 0.55,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_hyp_le_0.6"
+      },
+      "differ_sample": [
+        [
+          [
+            143
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "SIGN"
+        ],
+        [
+          [
+            191
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            192
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            193
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            223
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 122185,
+      "n_expected": 15076,
+      "n_historical": 15076,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 434,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "bd22c1d652",
+      "config": {
+        "ent_thr": 0.7,
+        "icd_thr": 0.6,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "neg_only"
+      },
+      "differ_sample": [
+        [
+          [
+            63
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            67
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            68
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            69
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            70
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 166980,
+      "n_expected": 20424,
+      "n_historical": 20424,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 1503,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "bfd60517a9",
+      "config": {
+        "ent_thr": 0.55,
+        "icd_thr": 0.6,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_hyp_le_0.6"
+      },
+      "differ_sample": [
+        [
+          [
+            72
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            107
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            152
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            154
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            155
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 111345,
+      "n_expected": 13640,
+      "n_historical": 13640,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 560,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "c3b51cd5b2",
+      "config": {
+        "ent_thr": 0.6,
+        "icd_thr": 0.55,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_no_required"
+      },
+      "differ_sample": [
+        [
+          [
+            147
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "SIGN"
+        ],
+        [
+          [
+            183
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            196
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            197
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            198
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 132256,
+      "n_expected": 16244,
+      "n_historical": 16244,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 630,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "c667a693d0",
+      "config": {
+        "ent_thr": 0.7,
+        "icd_thr": 0.55,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_no_required"
+      },
+      "differ_sample": [
+        [
+          [
+            165
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            209
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            210
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            211
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            212
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 119788,
+      "n_expected": 14777,
+      "n_historical": 14777,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 435,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "c75ea72432",
+      "config": {
+        "ent_thr": 0.65,
+        "icd_thr": 0.3,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_hyp_le_0.6"
+      },
+      "differ_sample": [
+        [
+          [
+            1
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            2
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            118
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            119
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            127
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 204702,
+      "n_expected": 25356,
+      "n_historical": 25356,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 806,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "cbd731c119",
+      "config": {
+        "ent_thr": 0.6,
+        "icd_thr": 0.65,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_hyp_le_0.6"
+      },
+      "differ_sample": [
+        [
+          [
+            103
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "SIGN"
+        ],
+        [
+          [
+            133
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            134
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            135
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            158
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 87448,
+      "n_expected": 10951,
+      "n_historical": 10951,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 279,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "cd3905ed71",
+      "config": {
+        "ent_thr": 0.55,
+        "icd_thr": 0.55,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1"
+      },
+      "differ_sample": [
+        [
+          [
+            83
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            125
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            138
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            174
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            186
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 140492,
+      "n_expected": 17127,
+      "n_historical": 17127,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 920,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "cf8148b42c",
+      "config": {
+        "ent_thr": 0.65,
+        "icd_thr": 0.6,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_no_required"
+      },
+      "differ_sample": [
+        [
+          [
+            143
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            153
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            154
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            155
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            186
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 110523,
+      "n_expected": 13607,
+      "n_historical": 13607,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 505,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "d1ccd79a26",
+      "config": {
+        "ent_thr": 0.65,
+        "icd_thr": 0.6,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "neg_only"
+      },
+      "differ_sample": [
+        [
+          [
+            67
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            71
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            72
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            73
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            74
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 180229,
+      "n_expected": 21932,
+      "n_historical": 21932,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 1747,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "d24c757c41",
+      "config": {
+        "ent_thr": 0.6,
+        "icd_thr": 0.6,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "neg_only"
+      },
+      "differ_sample": [
+        [
+          [
+            63
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            67
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            68
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            69
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            70
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 176806,
+      "n_expected": 21477,
+      "n_historical": 21477,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 1709,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "d2dd49860c",
+      "config": {
+        "ent_thr": 0.65,
+        "icd_thr": 0.65,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_no_required"
+      },
+      "differ_sample": [
+        [
+          [
+            123
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            124
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            125
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            148
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            152
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 92303,
+      "n_expected": 11478,
+      "n_historical": 11478,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 395,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "d3d1ea58b8",
+      "config": {
+        "ent_thr": 0.55,
+        "icd_thr": 0.6,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_no_required"
+      },
+      "differ_sample": [
+        [
+          [
+            89
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            124
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            136
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "SIGN"
+        ],
+        [
+          [
+            163
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            173
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 123109,
+      "n_expected": 15088,
+      "n_historical": 15088,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 780,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "db33b346f5",
+      "config": {
+        "ent_thr": 0.55,
+        "icd_thr": 0.6,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_hyp_le_0.6"
+      },
+      "differ_sample": [
+        [
+          [
+            85
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            120
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            132
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "SIGN"
+        ],
+        [
+          [
+            168
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            170
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 113777,
+      "n_expected": 13999,
+      "n_historical": 13999,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 583,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "ddcb74d464",
+      "config": {
+        "ent_thr": 0.7,
+        "icd_thr": 0.55,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1"
+      },
+      "differ_sample": [
+        [
+          [
+            153
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            196
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            197
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            198
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            199
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 117184,
+      "n_expected": 14433,
+      "n_historical": 14433,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 427,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "e08b72d686",
+      "config": {
+        "ent_thr": 0.6,
+        "icd_thr": 0.65,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_no_required"
+      },
+      "differ_sample": [
+        [
+          [
+            105
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "SIGN"
+        ],
+        [
+          [
+            135
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            136
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            137
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            161
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 94526,
+      "n_expected": 11774,
+      "n_historical": 11774,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 403,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "e47c67fcee",
+      "config": {
+        "ent_thr": 0.55,
+        "icd_thr": 0.65,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_no_required"
+      },
+      "differ_sample": [
+        [
+          [
+            99
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            109
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "SIGN"
+        ],
+        [
+          [
+            140
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            141
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            142
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 103217,
+      "n_expected": 12709,
+      "n_historical": 12709,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 609,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "e557446a1c",
+      "config": {
+        "ent_thr": 0.7,
+        "icd_thr": 0.6,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_hyp_le_0.6"
+      },
+      "differ_sample": [
+        [
+          [
+            169
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            170
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            171
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            172
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            227
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 96405,
+      "n_expected": 11997,
+      "n_historical": 11997,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 295,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "edb7ab69cd",
+      "config": {
+        "ent_thr": 0.7,
+        "icd_thr": 0.65,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "neg_only"
+      },
+      "differ_sample": [
+        [
+          [
+            57
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            60
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            61
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            62
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            63
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 139238,
+      "n_expected": 17278,
+      "n_historical": 17278,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 1242,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "ee774975c1",
+      "config": {
+        "ent_thr": 0.6,
+        "icd_thr": 0.65,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1"
+      },
+      "differ_sample": [
+        [
+          [
+            105
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "SIGN"
+        ],
+        [
+          [
+            135
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            136
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            137
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            161
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 94526,
+      "n_expected": 11774,
+      "n_historical": 11774,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 403,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "f0e43d62b9",
+      "config": {
+        "ent_thr": 0.55,
+        "icd_thr": 0.55,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_no_required"
+      },
+      "differ_sample": [
+        [
+          [
+            97
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            139
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            152
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            155
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "SIGN"
+        ],
+        [
+          [
+            191
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 143747,
+      "n_expected": 17564,
+      "n_historical": 17564,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 949,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "f1875b7fcc",
+      "config": {
+        "ent_thr": 0.7,
+        "icd_thr": 0.3,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1"
+      },
+      "differ_sample": [
+        [
+          [
+            6
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            7
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            111
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            112
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            120
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 196970,
+      "n_expected": 24237,
+      "n_historical": 24237,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 805,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "f2b793a5c1",
+      "config": {
+        "ent_thr": 0.6,
+        "icd_thr": 0.6,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_no_required"
+      },
+      "differ_sample": [
+        [
+          [
+            129
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "SIGN"
+        ],
+        [
+          [
+            156
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            166
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            167
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            168
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 113166,
+      "n_expected": 13962,
+      "n_historical": 13962,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 518,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "f32ea84cc4",
+      "config": {
+        "ent_thr": 0.65,
+        "icd_thr": 0.6,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "neg_only"
+      },
+      "differ_sample": [
+        [
+          [
+            63
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            67
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            68
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            69
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            70
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 176806,
+      "n_expected": 21477,
+      "n_historical": 21477,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 1709,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "f483f06464",
+      "config": {
+        "ent_thr": 0.7,
+        "icd_thr": 0.3,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_no_required"
+      },
+      "differ_sample": [
+        [
+          [
+            6
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            7
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            125
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            126
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            134
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 202774,
+      "n_expected": 25027,
+      "n_historical": 25027,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 823,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "f4adacf3ba",
+      "config": {
+        "ent_thr": 0.7,
+        "icd_thr": 0.55,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_no_required"
+      },
+      "differ_sample": [
+        [
+          [
+            153
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            196
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            197
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            198
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            199
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 117184,
+      "n_expected": 14433,
+      "n_historical": 14433,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 427,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "f5b4302e12",
+      "config": {
+        "ent_thr": 0.55,
+        "icd_thr": 0.55,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1"
+      },
+      "differ_sample": [
+        [
+          [
+            97
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            139
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            152
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            155
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "SIGN"
+        ],
+        [
+          [
+            191
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 143747,
+      "n_expected": 17564,
+      "n_historical": 17564,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 949,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "f7235bacb8",
+      "config": {
+        "ent_thr": 0.65,
+        "icd_thr": 0.3,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_hyp_le_0.6"
+      },
+      "differ_sample": [
+        [
+          [
+            1
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            2
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            106
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            107
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            115
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 198587,
+      "n_expected": 24515,
+      "n_historical": 24515,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 777,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "f81c67e247",
+      "config": {
+        "ent_thr": 0.7,
+        "icd_thr": 0.55,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1"
+      },
+      "differ_sample": [
+        [
+          [
+            165
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            209
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            210
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            211
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            212
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 119788,
+      "n_expected": 14777,
+      "n_historical": 14777,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 435,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "f9531a2a8e",
+      "config": {
+        "ent_thr": 0.6,
+        "icd_thr": 0.55,
+        "map": "cm_gated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_no_required"
+      },
+      "differ_sample": [
+        [
+          [
+            170
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            183
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            184
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            185
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "HYPOTHETICAL"
+        ],
+        [
+          [
+            218
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 128947,
+      "n_expected": 15846,
+      "n_historical": 15846,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 617,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "fd21d8a57e",
+      "config": {
+        "ent_thr": 0.55,
+        "icd_thr": 0.55,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_hyp_le_0.6"
+      },
+      "differ_sample": [
+        [
+          [
+            93
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            135
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            148
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            151
+          ],
+          "nm_trait_main",
+          "DIAGNOSIS",
+          "SIGN"
+        ],
+        [
+          [
+            198
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 132451,
+      "n_expected": 16273,
+      "n_historical": 16273,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 710,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    },
+    {
+      "agrees": true,
+      "cfg_id": "febeb53ab0",
+      "config": {
+        "ent_thr": 0.7,
+        "icd_thr": 0.55,
+        "map": "cm_ungated",
+        "occ": "last_upsert",
+        "sel": "all",
+        "trait": "v1_hyp_le_0.6"
+      },
+      "differ_sample": [
+        [
+          [
+            200
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            201
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            202
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            203
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ],
+        [
+          [
+            204
+          ],
+          "nm_trait_main",
+          "HYPOTHETICAL",
+          "SIGN"
+        ]
+      ],
+      "equal": false,
+      "n_differ": 112439,
+      "n_expected": 13917,
+      "n_historical": 13917,
+      "n_only_expected": 0,
+      "n_only_historical": 0,
+      "natural": {
+        "n_only_expected": 0,
+        "n_only_historical": 0,
+        "n_other_differences": 0,
+        "n_trait_main_ties": 359,
+        "other_sample": [],
+        "presence_equal": true
+      },
+      "order_equal": true,
+      "status": "compared"
+    }
+  ]
+}

@@ -1,97 +1,118 @@
-GATE1: passed
-
-```
-uv run pytest -m dumps tests/test_pipeline_fidelity.py tests/test_pipeline_tables_v1.py tests/test_pipeline_tables_v2.py tests/test_pipeline_semantics.py tests/test_data_dumps.py tests/test_data_store.py -q -rA
-PASSED tests/test_pipeline_fidelity.py::test_md_equal_dump_all_columns_and_ids
-PASSED tests/test_pipeline_fidelity.py::test_v1_funnel
-PASSED tests/test_pipeline_fidelity.py::test_extend_equal_dump_inferred_rule
-PASSED tests/test_pipeline_fidelity.py::test_cm_space_presence_equals_md
-PASSED tests/test_pipeline_fidelity.py::test_hierarchy_version_equal_v1_v2
-PASSED tests/test_pipeline_fidelity.py::test_full_v1_run_under_60s          (parse+hierarchy 3.0s, run 4.8s)
-PASSED tests/test_pipeline_fidelity.py::test_64_hybrids_v1_to_v2_under_120s (64 hybrids 25.0s)
-PASSED tests/test_pipeline_tables_v1.py::test_v1_tables_equal_dump          (rebuild 13.3s, compare 7.1s)
-PASSED tests/test_pipeline_tables_v2.py::test_v2_entity_icd_and_trait_equal_dump
-PASSED tests/test_pipeline_tables_v2.py::test_v2_audit_and_md_equal_dump
-PASSED tests/test_pipeline_tables_v2.py::test_core_v2_preset_agrees_with_md
-PASSED tests/test_pipeline_semantics.py::test_dummy_sound_on_v1_sample
-(+ 19 row-count tests of tests/test_data_{dumps,store}.py)
-31 passed, 53 deselected in 103.79s (0:01:43)
-```
+DONE: α
 
 # Status — Lead α
 
 ## Estado
 
-GATE 1 aprovado; α3 em revisão.
+α1–α4 concluídos. GATE 1 aprovado e reconferido depois da última mudança em `pipeline/core.py`, que só alterou uma
+docstring. O replay Docker foi executado pela sessão principal e está registrado. O REQUEST do lead β (regras dummy,
+SPEC 4.6) está atendido.
 
 ## Feito
 
-- `41fe19c` data: leitor de mysqldump em streaming (`data/dumps.py`) e snapshots Parquet com `manifest.json`
-  (`data/store.py`) em `/home/vinicius/hab-data/snapshots/{v1,v2,g0327}`.
-- `cb51181` pipeline: três níveis de igualdade (`pipeline/equality.py`); tabelas V1 `entity` e `trait` rederivadas das
-  respostas (`pipeline/tables_v1.py`).
-- Núcleo (`pipeline/{catalog,evidence,core,trace,mapping,semantics}.py`, escrito pelo lead): uma função parametrizada e
-  determinística sobre o JSON (ordem dos arrays preservada), presets `V1`/`V2`, catálogo de fatores (pré-ACM como
-  indisponíveis), trace por etapa, certificados de fator mudo (`semantics.dummy`, só prova irrelevância).
-- Fidelidade exata (todas as colunas, ordem e ids):
-  - V1: `entity` 274.010, `trait` 469.957, `md` 43.194 (ids 1..43.194), funil 274.010 → 265.587 → 259.198 → 171.713 →
-    43.194 → 43.194; `extend` 44.233 (ids 23.302..67.534; **regra inferida**, F1 §2.4).
-  - V2 (secundário, também exato): `entity_icd` 375.595, `entity_trait` 107.543, `cutoff_audit` 75.119, `md` 27.861
-    (atributos inclusive; 0 empates no GROUP_CONCAT). O preset `V2` do núcleo concorda com o `md` V2 em presença e score.
-- Diferença de 1 ULP (med 560, C49.9): não aparece; Python lê o texto decimal do dump e o JSON com o mesmo valor.
+- **α1–α2 (GATE 1).**
+  - Snapshots Parquet e leitor de dumps.
+  - Núcleo parametrizado (`pipeline/`) com fidelidade exata V1 e V2 (tabelas abaixo).
+- **α3.** 5.087 grupos documentais, 13 estratos, semente 20260930 e selagem (`SealedError`).
+- **α4.**
+  - `repro/sources_manifest.json`.
+  - Texto V1, fases e metadados por chamada: `docs/estudo_a/texto_v1.json`.
+  - Identidade V1 = 0605: `docs/estudo_a/dumps_v1_0605.json`.
+  - Repetibilidade, tradução e contraste: `docs/estudo_a/resultados_estudo_a.json`.
+  - `repro/claims_study_a.yaml`, com 24 afirmações.
+  - Relatório final: `docs/estudo_a/relatorio_estudo_a.md`.
+- **Replay SQL e validação cruzada** (commits `783db26`, `2e8eab4`, `abb34df`, `71eccef`).
+  - `repro/replay_manifest.json` registra:
+    - a ação de operador "load `hd_medication`";
+    - a primeira execução falha;
+    - o resultado de `replay.compare`;
+    - o resultado da validação cruzada (xval).
+  - Claim P1c passa a `rederivado_verificado`; nova claim A-d-xval; relatório §7.
+- **REQUEST β, regras dummy** (commits `d833f8c`, `82d585f`).
+  - Regra 2 (`sel`) ganhou a condição de ordem por código (EX-30).
+  - A regra 3 (`occ`) tinha um contraexemplo, achado pelo teste de propriedade e explicado abaixo; está corrigida.
+  - Testes hypothesis de solidez contra força bruta, com `Id` duplicado e empates:
+    - `test_dummy_sound_property`: contrastes aleatórios, |D| de 0 a 6, espaços CM e OMS;
+    - `test_dummy_sound_property_sel_under_upsert`: dirigido ao formato de EX-29;
+    - `test_ex30_sel_order_condition`.
+  - Checagem de mutação: sem a condição de ordem, os dois testes dirigidos falham; o teste geral não pega esse caso.
+  - Docstring de `core._select` corrigida (sem mudança de comportamento).
 
-## Em andamento
+## Achado de ambiente (replay)
 
-- α3: grupos, estratos, splits (worker terminou; revisão do lead).
-
-## Próximo
-
-- α4: manifesto de fontes, scripts de replay Docker (READY_FOR_DOCKER), `historical/`, claims, relatório do Estudo A.
-
-## Testes
-
-- Não-dumps: `uv run pytest -m "not dumps" tests/ -q` → `154 passed, 31 deselected in 1.08s`.
-- Dumps: ver bloco GATE1 acima.
+- **A primeira execução Docker falhou em silêncio.**
+  - `up.sh` não carregava `hd_medication`. As 744.590 inserções em `entity` falharam na FK `FK_MEDICATION_ACM2`, e o
+    código histórico só imprime o erro.
+  - O driver terminou com rc=0 e exportou 0 linhas; a validação cruzada rodou sobre tabelas vazias.
+- **Correção (`1c505b0`, sessão principal).** `up.sh` carrega `hd_medication`, e `driver.py` falha quando nenhuma linha
+  de `entity` é gravada.
+- **Registro.** Está em `failed_runs` e `setup_operator_actions` do manifesto e no relatório §7.1.
 
 ## Números re-derivados
 
-| valor | comando | arquivo |
-|---|---|---|
-| V1 entity 274.010 / trait 469.957 = dump | `uv run pytest -m dumps tests/test_pipeline_tables_v1.py` | `pipeline/tables_v1.py` |
-| V1 md 43.194 = dump, funil exato | `uv run pytest -m dumps tests/test_pipeline_fidelity.py` | `pipeline/core.py`, `tables_v1.py` |
-| V1 extend 44.233 = dump (regra inferida) | idem | idem |
-| V2 entity_icd/entity_trait/cutoff_audit/md = dump | `uv run pytest -m dumps tests/test_pipeline_tables_v2.py` | `pipeline/tables_v2.py` |
-| Contraste V1→V2 nas respostas V1 (espaço OMS): md V1 projetado 34.101 chaves; 27.405 aparecem, 18.284 somem | `test_64_hybrids_v1_to_v2_under_120s` | `pipeline/core.py` |
-| Formas das famílias (corpus inteiro, descritivo, D2): 27.874 / 14.182 / 3.464 / 168 / 1 (1–5 conjuntos); 4.555 não monótonas; participação sel 23.425, occ 18.859, trait 17.561, icd_thr 12.784, ent_thr 2.287, map 0 | script ad hoc (a portar para `historical/`) | — |
-| Versão da hierarquia igual V1/V2: `hier:61ad55c843029102` | `test_hierarchy_version_equal_v1_v2` | `pipeline/mapping.py` |
-| Respostas: V1 7.447 (0 NULL, 258 vazias, 113 com Id repetido); V2 7.447 (0 NULL, 277 vazias, 71 Id repetido); 0327 7.447 (0 NULL, 288 vazias, 34 Id repetido) | sonda ad hoc | — |
+| valor | comando |
+|---|---|
+| V1 `entity` 274.010 e `trait` 469.957 iguais ao dump | `uv run pytest -m dumps tests/test_pipeline_tables_v1.py` |
+| V1 md 43.194 igual ao dump, funil exato; `extend` 44.233 (regra inferida) | `uv run pytest -m dumps tests/test_pipeline_fidelity.py` |
+| V2 `entity_icd`, `entity_trait`, `cutoff_audit` e md iguais ao dump | `uv run pytest -m dumps tests/test_pipeline_tables_v2.py` |
+| Replay `405a10c`: `entity`, `trait` e md iguais aos snapshots (ordem e ids); 1 valor a 1 ULP em (560, `C49.9`); 0 linhas `Error`; 618,4 s | `uv run python scripts/replay/write_manifest.py` |
+| Primeira execução: 744.590 erros `FK_MEDICATION_ACM2`, 0 linhas | idem (`failed_runs`) |
+| xval: 100 configurações, 1.082 medicamentos de dev, 1.863.659 linhas | `uv run python -m habench.historical.xval compare` |
+| xval, chave natural: 100/100 concordam | idem |
+| xval, comparação estrita: 0/100 iguais (96.172 linhas diferem só em empates de `nm_trait_main`) | idem |
+| Contraste V1→V2, dev+cal e corpus inteiro | `uv run python -m habench.historical.study_a` |
+| Entidades com nome de traço repetido: V1 0 de 150.506; V2 0 de 75.913 | sonda ad hoc sobre `load_evidence` (não versionada) |
 
-## Decisões de semântica híbrida (não cobertas pelo desenho; fixadas em `catalog.py`)
+## Testes
 
-- `occ=per_entity_any` com `sel=all`: um registro por (Id da entidade, código), como as linhas de `entity_icd`.
-- `sel=top1` sob `occ=last_upsert`: top-1 por Id emitidos na ordem da primeira ocorrência do Id; depois agrupados por
-  código, a última ocorrência define os escores.
-- `occ=first_upsert`: a primeira ocorrência define escalares e escores de traits.
-- `map=who_exact`: subcategoria exata ou categoria exata de 3 caracteres, sem fallback de prefixo.
-- Níveis extras de `trait`: `v1_hyp_le_0.6` (cabeçalho do código), `v1_no_required`, `neg_only`.
-- `cm_ungated` no espaço OMS: códigos sem projeção ficam em `RunResult.unmapped`, não viram ausência; em níveis `who_*`,
-  NO_MAP é o filtro histórico da V2 (descarte).
-- Limiares aceitam qualquer float em [0, 1]; os níveis listados são a grade catalogada.
+- Suite padrão: `uv run pytest -q` → `606 passed, 46 deselected, 3 warnings in 26.50s`.
+- GATE 1 reconferido depois de `d833f8c`:
+  `uv run pytest -m dumps tests/test_pipeline_fidelity.py tests/test_pipeline_tables_v1.py tests/test_pipeline_tables_v2.py tests/test_pipeline_semantics.py -q`
+  → `13 passed, 35 deselected in 131.45s`.
+- `uv run pytest tests/test_historical_xval.py tests/test_historical_replay.py -q` → 10 + 10 passed.
+
+## REQUEST (lead β) — SPEC v0.2
+
+O núcleo não mudou de semântica, e §3.2 confere com o código, inclusive a ordem de saída de `top1`. Os pontos abaixo são
+correções ao SPEC.
+
+1. **§4.6, regra 3 (`occ`): incorreta como está escrita.**
+   - *Contraexemplo (hypothesis).* Uma entidade (`Id` 1, `es` 0,60) tem `A01` 0,30 e os traços HYPOTHETICAL 0,55 e
+     HYPOTHETICAL 0,62. O contraste é V1 → `icd_thr` 0,30 e `occ` `first_upsert`, no espaço CM.
+   - `first_upsert` fica com o primeiro score (0,55, o que satisfaz `valid_trait`); `last_upsert` e `per_entity_any`
+     ficam com o último (0,62, que reprova). A regra certificava `occ`.
+   - *Correção em `semantics.py`.* A regra também exige que nenhuma entidade relevante repita um nome de traço com
+     scores diferentes.
+   - *Texto proposto.* "…e cada um desses `Id` pertence a uma única entidade, **sem nome de traço repetido com scores
+     diferentes**."
+   - Não há caso real (0 entidades em V1 e V2), mas `add_trait` (§4.5) pode criar um.
+2. **§3.2, passo 3: "primeira aparição do seu grupo de `Id`".** No código é a do **primeiro candidato** do grupo. Uma
+   entidade sem conceitos não posiciona o grupo. Proposta: "na ordem do primeiro candidato do grupo".
+3. **§3.2, passo 4: nome de traço repetido dentro de uma entidade.** O código usa o primeiro score em `first_upsert` e
+   o último em `last_upsert` e `per_entity_any`. Convém dizer isso explicitamente (é o que torna o item 1 possível).
+4. **§3.2, passo 3:** a nota "a docstring de `_select` diz emission order" ficou obsoleta com `d833f8c`.
+5. **`oracle/dummies.py`:** o contorno da regra 2 agora é redundante (`semantics.dummy` já tem a condição de ordem).
+   Pode ficar ou sair; o resultado é o mesmo.
+
+## Decisões de semântica híbrida (fixadas em `catalog.py`)
+
+- `occ=per_entity_any` com `sel=all`: um registro por (Id da entidade, código).
+- `sel=top1`: por grupo de `Id`; os vencedores saem na ordem do primeiro candidato do grupo.
+- `occ=first_upsert`: a primeira ocorrência define os escalares e os scores de traço.
+- `map=who_exact`: sem fallback de prefixo. `cm_ungated` no espaço OMS: códigos sem projeção vão para `unmapped`.
+
+## Desvios registrados
+
+- **Tamanho do dev (D4 efetivo).**
+  - dev: 461 grupos / 1.082 medicamentos (261 forçados + 200 sorteados);
+  - cal: 200 / 286;
+  - test: 600 / 822;
+  - reserve: 3.826 / 5.257.
+- **Repetibilidade de 2024.** 15 de 193 grupos diferem no nível 2, todos só na ordem de `Attributes`.
+- **Nível 1 "como despejado".** O texto do dump é a re-serialização do MySQL.
+- **xval estrita 0/100.** O `link` não tem `ORDER BY`, e a causa da ordem diferente no esquema reduzido não foi
+  determinada (relatório §7.3).
 
 ## Perguntas / BLOCKED
 
 (nenhuma)
-
-## Desvios propostos
-
-- **`flock` bloqueado.** A camada de permissões rejeita `flock ... uv run pytest` ("runs its argument as a command").
-  Os testes `dumps` rodam como `uv run pytest -m dumps <arquivo>`, sem o lock. O primeiro build dos snapshots rodou
-  sem o lock, porque o `addopts` do `pyproject.toml` não exclui `dumps` e um worker rodou `uv run pytest` puro.
-  Proposta: liberar `flock` nas permissões ou excluir `dumps` do `addopts`.
-- **Nível 1 de igualdade "como despejado".** `ds_api_response` é uma coluna JSON do MySQL: o dump traz a
-  re-serialização do MySQL, não os bytes enviados pelo ACM. Afirmações de nível 1 valem para o texto do dump.
-
-## REQUEST
-
-- `.gitignore`: o padrão `data/` ignora também `src/habench/data/`. Ancorar como `/data/` (e idem `truth/`, `views/`,
-  `runs/`). Até lá, os arquivos de `src/habench/data/` entram com `git add -f`.
