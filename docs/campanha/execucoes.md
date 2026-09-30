@@ -27,11 +27,11 @@ O esperado total fica abaixo de US$15, dentro do critério de seguir (≤ ~US$25
 
 ## Execuções
 
-| run_id | data (UTC−3) | agenda | resultado | ledger |
+| run_id | data | agenda | resultado | ledger |
 |---|---|---|---|---|
 | `smoke-dry` | 2026-09-30 | `smoke.json` | simulação: 100 chamadas planejadas, nada gravado | — |
-| `smoke-01` | 2026-09-30 ~15:00 | `smoke.json` | 100/100 falhas `SubscriptionRequiredException` ("The AWS Access Key Id needs a subscription for the service") | US$0,4875 (pior caso das falhas) |
-| `canary-bedrock-01` | 2026-09-30 ~15:10 | `canary_bedrock.json` | 3/3 falhas `AccessDeniedException` ("Your account is currently being verified…") | US$0,0050 (pior caso das falhas) |
+| `smoke-01` | 2026-09-30 17:37–17:38 UTC | `smoke.json` | 100/100 falhas `SubscriptionRequiredException` ("The AWS Access Key Id needs a subscription for the service") | US$0,4875 (pior caso das falhas) |
+| `canary-bedrock-01` | 2026-09-30 17:39 UTC | `canary_bedrock.json` | 3/3 falhas `AccessDeniedException` ("Your account is currently being verified…") | US$0,0050 (pior caso das falhas) |
 
 **Total do ledger:** US$0,4925, todo de falhas conciliadas pelo pior caso (D5). O serviço recusou as requisições antes de processá-las.
 
